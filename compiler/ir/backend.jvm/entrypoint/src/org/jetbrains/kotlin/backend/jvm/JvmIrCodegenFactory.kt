@@ -37,10 +37,16 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi2ir.Psi2IrConfiguration
 import org.jetbrains.kotlin.psi2ir.Psi2IrTranslator
 import org.jetbrains.kotlin.psi2ir.generators.DeclarationStubGeneratorImpl
+import org.jetbrains.kotlin.psi2ir.generators.GeneratorExtensions
 import org.jetbrains.kotlin.psi2ir.generators.generateTypicalIrProviderList
 import org.jetbrains.kotlin.resolve.CleanableBindingContext
 
-class JvmIrCodegenFactory(private val phaseConfig: PhaseConfig) : CodegenFactory {
+open class JvmIrCodegenFactory(
+    private val phaseConfig: PhaseConfig,
+    private val externalMangler: JvmManglerDesc? = null,
+    private val externalSymbolTable: SymbolTable? = null,
+    private val jvmGeneratorExtensions: JvmGeneratorExtensions = JvmGeneratorExtensionsImpl()
+) : CodegenFactory {
     data class JvmIrBackendInput(
         val state: GenerationState,
         val irModuleFragment: IrModuleFragment,
@@ -59,18 +65,23 @@ class JvmIrCodegenFactory(private val phaseConfig: PhaseConfig) : CodegenFactory
 
     @JvmOverloads
     fun convertToIr(state: GenerationState, files: Collection<KtFile>, ignoreErrors: Boolean = false): JvmIrBackendInput {
-        val extensions = JvmGeneratorExtensionsImpl()
-        val mangler = JvmManglerDesc(MainFunctionDetector(state.bindingContext, state.languageVersionSettings))
+        val (mangler, symbolTable) =
+            if (externalSymbolTable != null) externalMangler!! to externalSymbolTable
+            else {
+                val mangler = JvmManglerDesc(MainFunctionDetector(state.bindingContext, state.languageVersionSettings))
+                val symbolTable = SymbolTable(JvmIdSignatureDescriptor(mangler), IrFactoryImpl, JvmNameProvider)
+                mangler to symbolTable
+            }
         val psi2ir = Psi2IrTranslator(state.languageVersionSettings, Psi2IrConfiguration(ignoreErrors))
-        val symbolTable = SymbolTable(JvmIdSignatureDescriptor(mangler), IrFactoryImpl, JvmNameProvider)
         val messageLogger = state.configuration[IrMessageLogger.IR_MESSAGE_LOGGER] ?: IrMessageLogger.None
-        val psi2irContext = psi2ir.createGeneratorContext(state.module, state.bindingContext, symbolTable, extensions)
+        val generatorExtensions = (jvmGeneratorExtensions as? GeneratorExtensions) ?: GeneratorExtensions()
+        val psi2irContext = psi2ir.createGeneratorContext(state.module, state.bindingContext, symbolTable, generatorExtensions)
         val pluginExtensions = IrGenerationExtension.getInstances(state.project)
         val functionFactory = IrFunctionFactory(psi2irContext.irBuiltIns, symbolTable)
         psi2irContext.irBuiltIns.functionFactory = functionFactory
 
         val stubGenerator =
-            DeclarationStubGeneratorImpl(psi2irContext.moduleDescriptor, symbolTable, state.languageVersionSettings, extensions)
+            DeclarationStubGeneratorImpl(psi2irContext.moduleDescriptor, symbolTable, state.languageVersionSettings, generatorExtensions)
         val frontEndContext = object : TranslationPluginContext {
             override val moduleDescriptor: ModuleDescriptor
                 get() = psi2irContext.moduleDescriptor
@@ -153,7 +164,7 @@ class JvmIrCodegenFactory(private val phaseConfig: PhaseConfig) : CodegenFactory
             symbolTable,
             phaseConfig,
             irProviders,
-            extensions,
+            jvmGeneratorExtensions,
             JvmBackendExtension.Default,
         ) {}
     }
