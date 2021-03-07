@@ -1365,7 +1365,7 @@ class ControlFlowProcessor(
 
         private fun generateInitializersForScriptClassOrObject(classOrObject: KtDeclarationContainer) {
             for (declaration in classOrObject.declarations) {
-                if (declaration is KtProperty || declaration is KtAnonymousInitializer) {
+                if (declaration is KtProperty || declaration is KtAnonymousInitializer || declaration is KtDestructuringDeclaration) {
                     generateInstructions(declaration)
                 }
             }
