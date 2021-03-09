@@ -43,10 +43,9 @@ import org.jetbrains.kotlin.lexer.KtToken
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.lexer.KtTokens.*
 import org.jetbrains.kotlin.psi.*
-import org.jetbrains.kotlin.psi.psiUtil.getQualifiedElementSelector
-import org.jetbrains.kotlin.psi.psiUtil.getStrictParentOfType
-import org.jetbrains.kotlin.psi.psiUtil.isAncestor
+import org.jetbrains.kotlin.psi.psiUtil.*
 import org.jetbrains.kotlin.resolve.BindingContext
+import org.jetbrains.kotlin.resolve.BindingContext.USED_AS_EXPRESSION
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.CompileTimeConstantUtils
 import org.jetbrains.kotlin.resolve.bindingContextUtil.getEnclosingFunctionDescriptor
@@ -61,6 +60,8 @@ import org.jetbrains.kotlin.resolve.constants.evaluate.ConstantExpressionEvaluat
 import org.jetbrains.kotlin.resolve.scopes.receivers.*
 import org.jetbrains.kotlin.types.expressions.DoubleColonLHS
 import org.jetbrains.kotlin.types.expressions.OperatorConventions
+import org.jetbrains.kotlin.types.typeUtil.isNothing
+import org.jetbrains.kotlin.types.typeUtil.isUnit
 import org.jetbrains.kotlin.util.slicedMap.ReadOnlySlice
 import java.util.*
 
@@ -1329,7 +1330,7 @@ class ControlFlowProcessor(
 
         override fun visitObjectDeclaration(objectDeclaration: KtObjectDeclaration) {
             generateHeaderDelegationSpecifiers(objectDeclaration)
-            generateInitializersForScriptClassOrObject(objectDeclaration)
+            generateInitializersForClassOrObject(objectDeclaration)
             generateDeclarationForLocalClassOrObjectIfNeeded(objectDeclaration)
         }
 
@@ -1363,9 +1364,9 @@ class ControlFlowProcessor(
             }
         }
 
-        private fun generateInitializersForScriptClassOrObject(classOrObject: KtDeclarationContainer) {
+        private fun generateInitializersForClassOrObject(classOrObject: KtDeclarationContainer) {
             for (declaration in classOrObject.declarations) {
-                if (declaration is KtProperty || declaration is KtAnonymousInitializer || declaration is KtDestructuringDeclaration) {
+                if (declaration is KtProperty || declaration is KtAnonymousInitializer) {
                     generateInstructions(declaration)
                 }
             }
@@ -1389,7 +1390,7 @@ class ControlFlowProcessor(
 
                 // delegation specifiers of primary constructor, anonymous class and property initializers
                 generateHeaderDelegationSpecifiers(klass)
-                generateInitializersForScriptClassOrObject(klass)
+                generateInitializersForClassOrObject(klass)
             }
 
             generateDeclarationForLocalClassOrObjectIfNeeded(klass)
@@ -1409,7 +1410,30 @@ class ControlFlowProcessor(
         }
 
         override fun visitScript(script: KtScript) {
-            generateInitializersForScriptClassOrObject(script)
+
+            // the same logic is implemented in the LazyScriptDescriptor
+            // TODO: consider extracting last expression type logic to a common place
+            val lastInitializer = script
+                .getChildOfType<KtBlockExpression>()
+                ?.getChildrenOfType<KtScriptInitializer>()?.lastOrNull()
+            val resultExpression = lastInitializer?.getChildOfType<KtExpression>()
+
+            val resultType = resultExpression?.let {
+                trace.bindingContext.getType(it)
+            }
+
+            val hasResultField = resultType != null && !resultType.isUnit() && !resultType.isNothing()
+
+            for (declaration in script.declarations) {
+                if (declaration is KtAnonymousInitializer) {
+                    generateInstructions(declaration)
+                    if (hasResultField && declaration == lastInitializer) {
+                        trace.record(USED_AS_EXPRESSION, resultExpression, true)
+                    }
+                } else if (declaration is KtProperty || declaration is KtDestructuringDeclaration) {
+                    generateInstructions(declaration)
+                }
+            }
         }
 
         private fun generateDeclarationForLocalClassOrObjectIfNeeded(classOrObject: KtClassOrObject) {
@@ -1440,7 +1464,7 @@ class ControlFlowProcessor(
             generateCallOrMarkUnresolved(constructor.getDelegationCall())
 
             if (!constructor.getDelegationCall().isCallToThis) {
-                generateInitializersForScriptClassOrObject(classOrObject)
+                generateInitializersForClassOrObject(classOrObject)
             }
 
             generateInstructions(constructor.bodyExpression)
@@ -1577,7 +1601,7 @@ class ControlFlowProcessor(
                 when (kind) {
                     ExplicitReceiverKind.DISPATCH_RECEIVER -> explicitReceiver = resolvedCall.dispatchReceiver
                     ExplicitReceiverKind.EXTENSION_RECEIVER, ExplicitReceiverKind.BOTH_RECEIVERS -> explicitReceiver =
-                            resolvedCall.extensionReceiver
+                        resolvedCall.extensionReceiver
                     ExplicitReceiverKind.NO_EXPLICIT_RECEIVER -> {
                     }
                 }
