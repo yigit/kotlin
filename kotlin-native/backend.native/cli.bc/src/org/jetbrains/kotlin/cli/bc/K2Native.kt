@@ -321,6 +321,7 @@ class K2Native : CLICompiler<K2NativeCompilerArguments>() {
                         true
                     }
                 })
+                put(PROPERTY_LAZY_INITIALIZATION, arguments.propertyLazyInitialization)
             }
         }
     }
