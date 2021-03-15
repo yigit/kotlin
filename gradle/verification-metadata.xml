@@ -2310,19 +2310,19 @@
       </component>
       <component group="de.undercouch" name="gradle-download-task" version="4.1.1">
          <artifact name="gradle-download-task-4.1.1.jar">
-            <md5 value="5da00a4a96829700216768887a8f3051" origin="https://repo1.maven.org/maven2/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.jar.md5">
+            <md5 value="5da00a4a96829700216768887a8f3051" origin="https://repo1.maven.org/maven2/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.jar.md5 also trust https://jcenter.bintray.com/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.jar.md5">
                <also-trust value="93578a8acb236688e2aebf33519b1dd2"/>
             </md5>
-            <sha256 value="eb08b570e408d4646705e70a949614d439ea2b11455f1652ab0330de8954dab9" origin="https://repo1.maven.org/maven2/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.jar">
+            <sha256 value="eb08b570e408d4646705e70a949614d439ea2b11455f1652ab0330de8954dab9" origin="https://repo1.maven.org/maven2/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.jar also trust https://jcenter.bintray.com/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.jar">
                <also-trust value="81d795f8d22c09bdae192d3e2f40624d6a14325ae745547bbce9df74361be598"/>
             </sha256>
          </artifact>
          <artifact name="gradle-download-task-4.1.1.pom">
-            <md5 value="14f58d70412fca2bf9ced5918917612d" origin="https://repo1.maven.org/maven2/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.pom.md5">
-               <also-trust value="0bbec6d674757370ee0ee5bfe611ff4f"/>
+            <md5 value="0bbec6d674757370ee0ee5bfe611ff4f" origin="https://repo1.maven.org/maven2/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.pom.md5 also trust https://plugins.gradle.org/m2/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.pom.md5">
+               <also-trust value="14f58d70412fca2bf9ced5918917612d"/>
             </md5>
-            <sha256 value="1109f1f71a54254d590337d8b9d443f9dfc08728c9c1d8335655cc1dcc88c0b9" origin="https://repo1.maven.org/maven2/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.pom">
-               <also-trust value="85e6607260dbbdb5e85f1988840b0d9ac4be9119dde90a1baca8ea775646415a"/>
+            <sha256 value="85e6607260dbbdb5e85f1988840b0d9ac4be9119dde90a1baca8ea775646415a" origin="https://repo1.maven.org/maven2/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.pom also trust https://plugins.gradle.org/m2/de/undercouch/gradle-download-task/4.1.1/gradle-download-task-4.1.1.pom">
+               <also-trust value="1109f1f71a54254d590337d8b9d443f9dfc08728c9c1d8335655cc1dcc88c0b9"/>
             </sha256>
          </artifact>
       </component>
