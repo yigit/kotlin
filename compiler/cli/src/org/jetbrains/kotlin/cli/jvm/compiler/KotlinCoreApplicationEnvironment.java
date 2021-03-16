@@ -17,6 +17,7 @@ import com.intellij.psi.augment.PsiAugmentProvider;
 import com.intellij.psi.meta.MetaDataContributor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.cli.jvm.compiler.jarfs.FastJarFileSystem;
 import org.jetbrains.kotlin.cli.jvm.modules.CoreJrtFileSystem;
 
 public class KotlinCoreApplicationEnvironment extends JavaCoreApplicationEnvironment {
@@ -49,5 +50,11 @@ public class KotlinCoreApplicationEnvironment extends JavaCoreApplicationEnviron
     @Override
     protected VirtualFileSystem createJrtFileSystem() {
         return new CoreJrtFileSystem();
+    }
+
+    @NotNull
+    @Override
+    protected VirtualFileSystem createJarFileSystem() {
+        return new FastJarFileSystem();
     }
 }
