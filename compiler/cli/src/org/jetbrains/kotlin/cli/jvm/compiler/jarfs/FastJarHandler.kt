@@ -18,9 +18,16 @@ import java.util.*
 internal class FastJarHandler(val fileSystem: FastJarFileSystem, path: String) : ZipHandler(path) {
     private val myRoot: VirtualFile?
 
-    private val ourEntryMap: Map<String, ZipEntryDescription> by lazy(LazyThreadSafetyMode.NONE) {
-        val zipEntries = file.parseCentralDirectory()
-        zipEntries.associateBy { it.relativePath }
+    private val canonicalPath = file.canonicalPath
+    private val ourEntryMap: Map<String, ZipEntryDescription>
+    private val cachedManifest: ByteArray?
+
+    init {
+        RandomAccessFile(file, "r").use { randomAccessFile ->
+            val bufferedRandomAccessFile = BufferedRandomAccessFile(randomAccessFile)
+            ourEntryMap = bufferedRandomAccessFile.parseCentralDirectory().associateBy { it.relativePath }
+            cachedManifest = ourEntryMap[MANIFEST_PATH]?.let(bufferedRandomAccessFile::contentsToByteArray)
+        }
     }
 
     private fun getOrCreateFile(info: EntryInfo, entries: MutableMap<EntryInfo, FastJarVirtualFile>): FastJarVirtualFile {
@@ -110,8 +117,9 @@ internal class FastJarHandler(val fileSystem: FastJarFileSystem, path: String) :
     }
 
     override fun contentsToByteArray(relativePath: String): ByteArray {
+        if (relativePath == MANIFEST_PATH) return cachedManifest ?: throw FileNotFoundException("$file!/$relativePath")
         val zipEntryDescription = ourEntryMap[relativePath] ?: throw FileNotFoundException("$file!/$relativePath")
-        return accessorCache.get(this).use {
+        return accessorCache.get(canonicalPath).use {
             synchronized(it) {
                 it.get().contentsToByteArray(zipEntryDescription)
             }
@@ -137,11 +145,10 @@ internal class FastJarHandler(val fileSystem: FastJarFileSystem, path: String) :
     }
 }
 
-private val accessorCache: FileAccessorCache<FastJarHandler, BufferedRandomAccessFile> =
-    object : FileAccessorCache<FastJarHandler, BufferedRandomAccessFile>(20, 10) {
+private val accessorCache: FileAccessorCache<String, BufferedRandomAccessFile> =
+    object : FileAccessorCache<String, BufferedRandomAccessFile>(20, 10) {
         @Throws(IOException::class)
-        override fun createAccessor(handler: FastJarHandler): BufferedRandomAccessFile {
-            val canonicalPathToZip = handler.file.canonicalPath
+        override fun createAccessor(canonicalPathToZip: String): BufferedRandomAccessFile {
             return BufferedRandomAccessFile(RandomAccessFile(canonicalPathToZip, "r"))
         }
 
@@ -150,7 +157,9 @@ private val accessorCache: FileAccessorCache<FastJarHandler, BufferedRandomAcces
             fileAccessor.close()
         }
 
-        override fun isEqual(val1: FastJarHandler, val2: FastJarHandler): Boolean {
-            return val1 === val2 // reference equality to handle different jars for different ZipHandlers on the same path
+        override fun isEqual(val1: String, val2: String): Boolean {
+            return val1 == val2 // reference equality to handle different jars for different ZipHandlers on the same path
         }
     }
+
+private const val MANIFEST_PATH = "META-INF/MANIFEST.MF"

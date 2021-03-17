@@ -90,11 +90,13 @@ fun BufferedRandomAccessFile.contentsToByteArray(
 
 fun File.parseCentralDirectory(): List<ZipEntryDescription> {
     return RandomAccessFile(this, "r").use { randomAccessFile ->
-        parseCentralDirectory(randomAccessFile)
+        BufferedRandomAccessFile(randomAccessFile).parseCentralDirectory()
     }
 }
 
-private fun parseCentralDirectory(randomAccessFile: RandomAccessFile): List<ZipEntryDescription> {
+fun BufferedRandomAccessFile.parseCentralDirectory(): List<ZipEntryDescription> {
+    val randomAccessFile = randomAccessFile
+
     val endOfCentralDirectoryOffset = (randomAccessFile.length() - END_OF_CENTRAL_DIR_SIZE downTo 0).first { offset ->
         randomAccessFile.readIntLittleEndianFromOffset(offset) == 0x06054b50
     }
@@ -104,29 +106,27 @@ private fun parseCentralDirectory(randomAccessFile: RandomAccessFile): List<ZipE
 
     var currentOffset = offsetOfCentralDirectory
 
-    val bufferedRandomAccessFile = BufferedRandomAccessFile(randomAccessFile)
-
     val result = mutableListOf<ZipEntryDescription>()
     for (i in 0 until entriesNumber) {
-        val headerConst = bufferedRandomAccessFile.readIntLittleEndianFromOffset(currentOffset)
+        val headerConst = readIntLittleEndianFromOffset(currentOffset)
         require(headerConst == 0x02014b50) {
             "$i: $headerConst"
         }
 
         val versionNeededToExtract =
-            bufferedRandomAccessFile.readShortLittleEndianFromOffset(currentOffset + 6)
+            readShortLittleEndianFromOffset(currentOffset + 6)
 
-        val compressionMethod = bufferedRandomAccessFile.readShortLittleEndianFromOffset(currentOffset + 10)
+        val compressionMethod = readShortLittleEndianFromOffset(currentOffset + 10)
 
-        val compressedSize = bufferedRandomAccessFile.readIntLittleEndianFromOffset(currentOffset + 20)
-        val uncompressedSize = bufferedRandomAccessFile.readIntLittleEndian()
-        val fileNameLength = bufferedRandomAccessFile.readShortLittleEndian()
-        val extraLength = bufferedRandomAccessFile.readShortLittleEndian()
-        val fileCommentLength = bufferedRandomAccessFile.readShortLittleEndian()
+        val compressedSize = readIntLittleEndianFromOffset(currentOffset + 20)
+        val uncompressedSize = readIntLittleEndian()
+        val fileNameLength = readShortLittleEndian()
+        val extraLength = readShortLittleEndian()
+        val fileCommentLength = readShortLittleEndian()
 
-        val offsetOfFileData = bufferedRandomAccessFile.readIntLittleEndianFromOffset(currentOffset + 42)
+        val offsetOfFileData = readIntLittleEndianFromOffset(currentOffset + 42)
 
-        val name = bufferedRandomAccessFile.readString(fileNameLength)
+        val name = readString(fileNameLength)
 
         currentOffset += 46 + fileNameLength + extraLength + fileCommentLength
 
