@@ -29,7 +29,9 @@ class ScriptingCompilerConfigurationExtension(
 
     override fun updateConfiguration(configuration: CompilerConfiguration) {
 
-        if (!configuration.getBoolean(ScriptingConfigurationKeys.DISABLE_SCRIPTING_PLUGIN_OPTION)) {
+        if (!configuration.getBoolean(ScriptingConfigurationKeys.DISABLE_SCRIPTING_PLUGIN_OPTION) &&
+            configuration.getBoolean(ScriptingConfigurationKeys.DISABLE_SCRIPTING_PLUGIN_OPTION)
+        ) {
 
             val messageCollector = configuration.get(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY) ?: MessageCollector.NONE
             val projectRoot = project.run { basePath ?: baseDir?.canonicalPath }?.let(::File)
