@@ -112,7 +112,9 @@ internal class FastJarHandler(val fileSystem: FastJarFileSystem, path: String) :
     override fun contentsToByteArray(relativePath: String): ByteArray {
         val zipEntryDescription = ourEntryMap[relativePath] ?: throw FileNotFoundException("$file!/$relativePath")
         return accessorCache.get(this).use {
-            it.get().contentsToByteArray(zipEntryDescription)
+            synchronized(it) {
+                it.get().contentsToByteArray(zipEntryDescription)
+            }
         }
     }
 
@@ -135,19 +137,20 @@ internal class FastJarHandler(val fileSystem: FastJarFileSystem, path: String) :
     }
 }
 
-private val accessorCache: FileAccessorCache<FastJarHandler, BufferedRandomAccessFile> = object : FileAccessorCache<FastJarHandler, BufferedRandomAccessFile>(20, 10) {
-    @Throws(IOException::class)
-    override fun createAccessor(handler: FastJarHandler): BufferedRandomAccessFile {
-        val canonicalPathToZip = handler.file.canonicalPath
-        return BufferedRandomAccessFile(RandomAccessFile(canonicalPathToZip, "r"))
-    }
+private val accessorCache: FileAccessorCache<FastJarHandler, BufferedRandomAccessFile> =
+    object : FileAccessorCache<FastJarHandler, BufferedRandomAccessFile>(20, 10) {
+        @Throws(IOException::class)
+        override fun createAccessor(handler: FastJarHandler): BufferedRandomAccessFile {
+            val canonicalPathToZip = handler.file.canonicalPath
+            return BufferedRandomAccessFile(RandomAccessFile(canonicalPathToZip, "r"))
+        }
 
-    @Throws(IOException::class)
-    override fun disposeAccessor(fileAccessor: BufferedRandomAccessFile) {
-        fileAccessor.close()
-    }
+        @Throws(IOException::class)
+        override fun disposeAccessor(fileAccessor: BufferedRandomAccessFile) {
+            fileAccessor.close()
+        }
 
-    override fun isEqual(val1: FastJarHandler, val2: FastJarHandler): Boolean {
-        return val1 === val2 // reference equality to handle different jars for different ZipHandlers on the same path
+        override fun isEqual(val1: FastJarHandler, val2: FastJarHandler): Boolean {
+            return val1 === val2 // reference equality to handle different jars for different ZipHandlers on the same path
+        }
     }
-}
