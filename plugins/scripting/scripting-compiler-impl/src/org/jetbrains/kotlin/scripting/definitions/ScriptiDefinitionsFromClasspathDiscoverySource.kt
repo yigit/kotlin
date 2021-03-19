@@ -24,7 +24,8 @@ typealias MessageReporter = (ScriptDiagnostic.Severity, String) -> Unit
 class ScriptDefinitionsFromClasspathDiscoverySource(
     private val classpath: List<File>,
     private val hostConfiguration: ScriptingHostConfiguration,
-    private val messageReporter: MessageReporter
+    private val messageReporter: MessageReporter,
+    private val fastCheck: ((File, String) -> Boolean)? = null,
 ) : ScriptDefinitionsSource {
 
     override val definitions: Sequence<ScriptDefinition> = run {
@@ -32,7 +33,8 @@ class ScriptDefinitionsFromClasspathDiscoverySource(
             classpath,
             this::class.java.classLoader,
             hostConfiguration,
-            messageReporter
+            messageReporter,
+            fastCheck
         )
     }
 }
@@ -52,25 +54,27 @@ fun discoverScriptTemplatesInClassLoader(
         }
     }
     val classpathWithLoader = SimpleClasspathWithClassLoader(classpath.toList(), classLoader)
-    return scriptTemplatesDiscoverySequence(classpathWithLoader, hostConfiguration, messageReporter)
+    return scriptTemplatesDiscoverySequence(classpathWithLoader, hostConfiguration, messageReporter, fastCheck = null)
 }
 
 fun discoverScriptTemplatesInClasspath(
     classpath: List<File>,
     baseClassLoader: ClassLoader?,
     hostConfiguration: ScriptingHostConfiguration,
-    messageReporter: MessageReporter
+    messageReporter: MessageReporter,
+    fastCheck: ((File, String) -> Boolean)? = null,
 ): Sequence<ScriptDefinition> {
     // TODO: try to find a way to reduce classpath (and classloader) to minimal one needed to load script definition and its dependencies
     val classpathWithLoader = LazyClasspathWithClassLoader(baseClassLoader) { classpath }
 
-    return scriptTemplatesDiscoverySequence(classpathWithLoader, hostConfiguration, messageReporter)
+    return scriptTemplatesDiscoverySequence(classpathWithLoader, hostConfiguration, messageReporter, fastCheck)
 }
 
 private fun scriptTemplatesDiscoverySequence(
     classpathWithLoader: ClasspathWithClassLoader,
     hostConfiguration: ScriptingHostConfiguration,
-    messageReporter: MessageReporter
+    messageReporter: MessageReporter,
+    fastCheck: ((File, String) -> Boolean)?
 ): Sequence<ScriptDefinition> {
     return sequence<ScriptDefinition> {
         // for jar files the definition class is expected in the same jar as the discovery file
@@ -80,7 +84,8 @@ private fun scriptTemplatesDiscoverySequence(
         for (dep in classpathWithLoader.classpath) {
             try {
                 when {
-                    dep.isFile && dep.extension == "jar" -> { // checking for extension is the compiler current behaviour, so the same logic is implemented here
+                    dep.isFile && dep.extension == "jar" && fastCheck?.invoke(dep, SCRIPT_DEFINITION_MARKERS_PATH) != false -> {
+                        // checking for extension is the compiler current behaviour, so the same logic is implemented here
                         JarFile(dep).use { jar ->
                             if (jar.getJarEntry(SCRIPT_DEFINITION_MARKERS_PATH) != null) {
                                 val definitionNames = jar.entries().asSequence().mapNotNull {

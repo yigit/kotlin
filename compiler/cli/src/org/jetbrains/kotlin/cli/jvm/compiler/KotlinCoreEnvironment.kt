@@ -188,10 +188,6 @@ class KotlinCoreEnvironment private constructor(
 
         registerProjectServices(projectEnvironment.project)
 
-        for (extension in CompilerConfigurationExtension.getInstances(project)) {
-            extension.updateConfiguration(configuration)
-        }
-
         sourceFiles += createKtFiles(project)
 
         collectAdditionalSources(project)
@@ -221,6 +217,14 @@ class KotlinCoreEnvironment private constructor(
         val (initialRoots, javaModules) =
             classpathRootsResolver.convertClasspathRoots(configuration.getList(CLIConfigurationKeys.CONTENT_ROOTS))
         this.initialRoots.addAll(initialRoots)
+
+        configuration.put(CLIConfigurationKeys.FAST_CHECK_JAR_CONTAINS_FILE) { file, path ->
+            findJarRoot(file)?.findFileByRelativePath(path) != null
+        }
+
+        for (extension in CompilerConfigurationExtension.getInstances(project)) {
+            extension.updateConfiguration(configuration)
+        }
 
         if (!configuration.getBoolean(JVMConfigurationKeys.SKIP_RUNTIME_VERSION_CHECK) && messageCollector != null) {
             JvmRuntimeVersionsConsistencyChecker.checkCompilerClasspathConsistency(
