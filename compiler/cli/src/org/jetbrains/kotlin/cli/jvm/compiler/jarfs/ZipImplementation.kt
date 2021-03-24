@@ -5,6 +5,7 @@
 
 package org.jetbrains.kotlin.cli.jvm.compiler.jarfs
 
+import java.nio.ByteOrder
 import java.nio.MappedByteBuffer
 import java.util.zip.Inflater
 
@@ -32,8 +33,9 @@ private const val LOCAL_FILE_HEADER_SIZE = LOCAL_FILE_HEADER_EXTRA_OFFSET + 2
 fun MappedByteBuffer.contentsToByteArray(
     zipEntryDescription: ZipEntryDescription
 ): ByteArray {
+    order(ByteOrder.LITTLE_ENDIAN)
     val extraSize =
-        readShortLittleEndianFromOffset((zipEntryDescription.offsetInFile + LOCAL_FILE_HEADER_EXTRA_OFFSET))
+        getShort(zipEntryDescription.offsetInFile + LOCAL_FILE_HEADER_EXTRA_OFFSET)
 
     position(
         zipEntryDescription.offsetInFile + LOCAL_FILE_HEADER_SIZE + zipEntryDescription.fileNameSize + extraSize
@@ -57,39 +59,41 @@ fun MappedByteBuffer.contentsToByteArray(
 }
 
 fun MappedByteBuffer.parseCentralDirectory(): List<ZipEntryDescription> {
+    order(ByteOrder.LITTLE_ENDIAN)
 
     val endOfCentralDirectoryOffset = (capacity() - END_OF_CENTRAL_DIR_SIZE downTo 0).first { offset ->
         // header of "End of central directory"
-        readIntLittleEndianFromOffset(offset) == 0x06054b50
+        getInt(offset) == 0x06054b50
     }
 
-    val entriesNumber = readShortLittleEndianFromOffset(endOfCentralDirectoryOffset + 10)
-    val offsetOfCentralDirectory = readIntLittleEndianFromOffset(endOfCentralDirectoryOffset + 16)
+    val entriesNumber = getShort(endOfCentralDirectoryOffset + 10)
+    val offsetOfCentralDirectory = getInt(endOfCentralDirectoryOffset + 16)
 
     var currentOffset = offsetOfCentralDirectory
 
     val result = mutableListOf<ZipEntryDescription>()
     for (i in 0 until entriesNumber) {
-        val headerConst = readIntLittleEndianFromOffset(currentOffset)
+        val headerConst = getInt(currentOffset)
         require(headerConst == 0x02014b50) {
             "$i: $headerConst"
         }
 
         val versionNeededToExtract =
-            readShortLittleEndianFromOffset(currentOffset + 6)
+            getShort(currentOffset + 6).toInt()
 
-        val compressionMethod = readShortLittleEndianFromOffset(currentOffset + 10)
+        val compressionMethod = getShort(currentOffset + 10).toInt()
 
-        val compressedSize = readIntLittleEndianFromOffset(currentOffset + 20)
-        val uncompressedSize = readIntLittleEndian()
-        val fileNameLength = readShortLittleEndian()
-        val extraLength = readShortLittleEndian()
-        val fileCommentLength = readShortLittleEndian()
+        val compressedSize = getInt(currentOffset + 20)
+        val uncompressedSize = getInt(currentOffset + 24)
+        val fileNameLength = getShort(currentOffset + 28).toInt()
+        val extraLength = getShort(currentOffset + 30).toInt()
+        val fileCommentLength = getShort(currentOffset + 32).toInt()
 
-        val offsetOfFileData = readIntLittleEndianFromOffset(currentOffset + 42)
+        val offsetOfFileData = getInt(currentOffset + 42)
 
         val bytesForName = ByteArray(fileNameLength)
 
+        position(currentOffset + 46)
         get(bytesForName)
 
         val name = String(bytesForName)
