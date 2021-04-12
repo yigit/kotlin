@@ -295,11 +295,11 @@ class FakeOverrideGenerator(
         irProducer: (F) -> S,
     ): List<S> {
         val irClass = declaration.parentAsClass
-        val superClasses = irClass.superTypes.mapNotNull { it.classifierOrNull?.owner as? IrClass }.toSet()
+        val superClasses = irClass.superTypes.mapNotNullTo(mutableSetOf()) { it.classifierOrNull?.owner as? IrClass }
 
-        return baseSymbols.flatMap { overridden ->
+        return baseSymbols.flatMapTo(mutableSetOf()) { overridden ->
             getOverriddenSymbolsInSupertypes(overridden, superClasses, irProducer)
-        }.distinct()
+        }.toList()
     }
 
     private fun <F : FirCallableSymbol<*>, S : IrSymbol> getOverriddenSymbolsInSupertypes(

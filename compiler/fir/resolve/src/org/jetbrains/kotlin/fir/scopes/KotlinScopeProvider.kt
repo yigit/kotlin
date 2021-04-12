@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.fir.symbols.ConeClassLikeLookupTag
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.typeContext
 import org.jetbrains.kotlin.fir.types.*
+import org.jetbrains.kotlin.utils.SmartList
 
 class KotlinScopeProvider(
     val declaredMemberScopeDecorator: (
@@ -36,7 +37,7 @@ class KotlinScopeProvider(
             val decoratedDeclaredMemberScope =
                 declaredMemberScopeDecorator(klass, declaredScope, useSiteSession, scopeSession)
 
-            val delegateFields = klass.declarations.mapNotNull { if (it is FirField && it.isSynthetic) it else null }
+            val delegateFields = klass.declarations.mapNotNullTo(SmartList()) { if (it is FirField && it.isSynthetic) it else null }
             val scopes = lookupSuperTypes(klass, lookupInterfaces = true, deep = false, useSiteSession = useSiteSession)
                 .mapNotNull { useSiteSuperType ->
                     useSiteSuperType.scopeForSupertype(useSiteSession, scopeSession, klass, decoratedDeclaredMemberScope, delegateFields)

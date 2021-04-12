@@ -145,7 +145,7 @@ class KotlinDeserializedJvmSymbolsProvider(
         return getPackageParts(classId.packageFqName).firstNotNullResult { part ->
             val ids = part.typeAliasNameIndex[classId.shortClassName]
             if (ids == null || ids.isEmpty()) return@firstNotNullResult null
-            val aliasProto = ids.map { part.proto.getTypeAlias(it) }.single()
+            val aliasProto = part.proto.getTypeAlias(ids[0])
             part.context.memberDeserializer.loadTypeAlias(aliasProto).symbol
         }
     }

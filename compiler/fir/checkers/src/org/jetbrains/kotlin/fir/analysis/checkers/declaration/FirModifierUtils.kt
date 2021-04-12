@@ -39,9 +39,11 @@ internal sealed class FirModifierList {
         override val modifiers: List<FirModifier.FirLightModifier>
             get() {
                 val modifierNodes = modifierList.getChildren(tree)
-                return modifierNodes.filterNotNull()
-                    .filter { it.tokenType is KtModifierKeywordToken }
-                    .map { FirModifier.FirLightModifier(it, it.tokenType as KtModifierKeywordToken, tree) }
+                return modifierNodes.mapNotNull {
+                    if (it != null && it.tokenType is KtModifierKeywordToken)
+                        FirModifier.FirLightModifier(it, it.tokenType as KtModifierKeywordToken, tree)
+                    else null
+                }
             }
     }
 

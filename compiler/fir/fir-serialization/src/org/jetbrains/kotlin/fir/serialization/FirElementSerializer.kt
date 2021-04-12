@@ -823,11 +823,11 @@ class FirElementSerializer private constructor(
 
     private fun MutableVersionRequirementTable.serializeVersionRequirements(annotations: List<FirAnnotationCall>): List<Int> =
         annotations
-            .filter {
-                it.toAnnotationClassId().asSingleFqName() == RequireKotlinConstants.FQ_NAME
+            .mapNotNull {
+                if (it.toAnnotationClassId().asSingleFqName() == RequireKotlinConstants.FQ_NAME) {
+                    serializeVersionRequirementFromRequireKotlin(it)?.let(::get)
+                } else null
             }
-            .mapNotNull(::serializeVersionRequirementFromRequireKotlin)
-            .map(::get)
 
     private fun MutableVersionRequirementTable.writeVersionRequirement(languageFeature: LanguageFeature): Int {
         return writeLanguageVersionRequirement(languageFeature, this)

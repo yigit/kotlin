@@ -58,7 +58,7 @@ object FirTypeParameterBoundsChecker : FirTypeParameterChecker() {
             // report the diagnostic on that bound
 
             //take TypeConstraint bounds only to report on the same point as old FE
-            val constraintBounds = bounds.filter { it.isInTypeConstraint() }.toSet()
+            val constraintBounds = bounds.filterTo(mutableSetOf()) { it.isInTypeConstraint() }
             val reportOn =
                 if (bounds.size == 2) {
                     val boundDecl = otherBounds.firstOrNull() ?: boundWithParam.last()

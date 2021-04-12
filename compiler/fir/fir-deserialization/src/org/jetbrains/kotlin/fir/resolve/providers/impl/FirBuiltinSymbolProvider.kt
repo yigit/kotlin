@@ -105,20 +105,20 @@ open class FirBuiltinSymbolProvider(session: FirSession, val kotlinScopeProvider
                         scopeProvider = kotlinScopeProvider
                         symbol = this@symbol
                         resolvePhase = FirResolvePhase.ANALYZED_DEPENDENCIES
-                        typeParameters.addAll(
-                            (1..arity).map {
+                        for (typeParameterNo in (1..arity)) {
+                            typeParameters.add(
                                 buildTypeParameter {
                                     session = this@FirBuiltinSymbolProvider.session
                                     resolvePhase = FirResolvePhase.ANALYZED_DEPENDENCIES
                                     origin = FirDeclarationOrigin.BuiltIns
-                                    name = Name.identifier("P$it")
+                                    name = Name.identifier("P$typeParameterNo")
                                     symbol = FirTypeParameterSymbol()
                                     variance = Variance.IN_VARIANCE
                                     isReified = false
                                     bounds += session.builtinTypes.nullableAnyType
                                 }
-                            },
-                        )
+                            )
+                        }
                         typeParameters.add(
                             buildTypeParameter {
                                 session = this@FirBuiltinSymbolProvider.session
@@ -320,8 +320,9 @@ open class FirBuiltinSymbolProvider(session: FirSession, val kotlinScopeProvider
         }
 
         fun getTopLevelFunctionSymbols(name: Name): List<FirNamedFunctionSymbol> {
-            return packageProto.`package`.functionList.filter { nameResolver.getName(it.name) == name }.map {
-                memberDeserializer.loadFunction(it).symbol
+            return packageProto.`package`.functionList.mapNotNull {
+                if (nameResolver.getName(it.name) == name) memberDeserializer.loadFunction(it).symbol
+                else null
             }
         }
     }

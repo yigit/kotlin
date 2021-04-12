@@ -501,7 +501,7 @@ open class RawFirBuilder(
         }
 
         private fun <T> KtTypeParameterListOwner.fillDanglingConstraintsTo(to: T) where T : FirDeclaration, T : FirTypeParameterRefsOwner {
-            val typeParamNames = typeParameters.mapNotNull { it.nameAsName }.toSet()
+            val typeParamNames = typeParameters.mapNotNullTo(mutableSetOf()) { it.nameAsName }
             val result = typeConstraints.mapNotNull { constraint ->
                 constraint.subjectTypeParameterName?.getReferencedNameAsName()?.let { name ->
                     if (!typeParamNames.contains(name)) {

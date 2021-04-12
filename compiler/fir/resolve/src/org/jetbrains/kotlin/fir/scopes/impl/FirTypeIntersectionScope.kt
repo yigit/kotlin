@@ -548,11 +548,11 @@ class FirTypeIntersectionScope private constructor(
             scopes: List<FirTypeScope>,
             dispatchReceiverType: ConeKotlinType,
         ): FirTypeScope {
-            scopes.singleOrNull()?.let { return it }
-            if (scopes.isEmpty()) {
-                return Empty
+            return when {
+                scopes.size == 1 -> scopes[0]
+                scopes.isEmpty() -> Empty
+                else -> FirTypeIntersectionScope(session, overrideChecker, scopes, dispatchReceiverType)
             }
-            return FirTypeIntersectionScope(session, overrideChecker, scopes, dispatchReceiverType)
         }
     }
 }

@@ -246,11 +246,10 @@ internal class EnhancementSignatureParts(
         javaTypeEnhancementState: JavaTypeEnhancementState
     ): JavaTypeQualifiers {
         val superQualifiers = fromSupertypes.map { it.extractQualifiers(session) }
-        val mutabilityFromSupertypes = superQualifiers.mapNotNull { it.mutability }.toSet()
-        val nullabilityFromSupertypes = superQualifiers.mapNotNull { it.nullability }.toSet()
+        val mutabilityFromSupertypes = superQualifiers.mapNotNullTo(mutableSetOf()) { it.mutability }
+        val nullabilityFromSupertypes = superQualifiers.mapNotNullTo(mutableSetOf()) { it.nullability }
         val nullabilityFromSupertypesWithWarning = fromSupertypes
-            .mapNotNull { it.extractQualifiers(session).nullability }
-            .toSet()
+            .mapNotNullTo(mutableSetOf()) { it.extractQualifiers(session).nullability }
 
         val own = extractQualifiersFromAnnotations(isHeadTypeConstructor, defaultQualifiersForType, javaTypeEnhancementState)
         val ownNullability = own.takeIf { !it.isNullabilityQualifierForWarning }?.nullability

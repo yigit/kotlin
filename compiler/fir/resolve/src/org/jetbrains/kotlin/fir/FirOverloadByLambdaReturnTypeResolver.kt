@@ -97,9 +97,7 @@ class FirOverloadByLambdaReturnTypeResolver(
         candidates: Set<Candidate>,
     ): Set<Candidate>? where T : FirResolvable, T : FirStatement {
         val lambdas = candidates.flatMap { candidate ->
-            candidate.postponedAtoms
-                .filter { it is ResolvedLambdaAtom && !it.analyzed }
-                .map { candidate to it as ResolvedLambdaAtom }
+            candidate.postponedAtoms.mapNotNull { if (it is ResolvedLambdaAtom && !it.analyzed) candidate to it else null}
         }.groupBy { (_, atom) -> atom.atom }
             .values.singleOrNull()?.toMap() ?: return null
 

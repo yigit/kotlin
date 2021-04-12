@@ -161,10 +161,10 @@ class Fir2IrConverter(
     }
 
     private fun delegatedMembers(irClass: IrClass): List<FirDeclaration> {
-        return irClass.declarations.filter {
-            it.origin == IrDeclarationOrigin.DELEGATED_MEMBER
-        }.mapNotNull {
-            components.declarationStorage.originalDeclarationForDelegated(it)
+        return irClass.declarations.mapNotNull {
+            if (it.origin == IrDeclarationOrigin.DELEGATED_MEMBER)
+                components.declarationStorage.originalDeclarationForDelegated(it)
+            else null
         }
     }
 

@@ -133,7 +133,7 @@ abstract class PersistentLogicSystem(context: ConeInferenceContext) : LogicSyste
 
         val commonFlow = flows.reduce(::lowestCommonFlow)
 
-        val variables = flows.flatMap { it.approvedTypeStatements.keys }.toSet()
+        val variables = flows.flatMapTo(mutableSetOf()) { it.approvedTypeStatements.keys }
         for (variable in variables) {
             val info = mergeOperation(flows.map { it.getApprovedTypeStatements(variable, commonFlow) }) ?: continue
             removeTypeStatementsAboutVariable(commonFlow, variable)

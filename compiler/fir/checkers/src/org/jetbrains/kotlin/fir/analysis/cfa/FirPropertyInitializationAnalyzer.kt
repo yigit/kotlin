@@ -31,7 +31,7 @@ object FirPropertyInitializationAnalyzer : AbstractFirPropertyInitializationChec
             symbolFir == null || symbolFir.initializer == null && symbolFir.delegate == null
         }
 
-        val localProperties = properties.filter { it.fir.initializer == null && it.fir.delegate == null }.toSet()
+        val localProperties = properties.filterTo(mutableSetOf()) { it.fir.initializer == null && it.fir.delegate == null }
 
         val reporterVisitor = PropertyReporter(localData, localProperties, reporter, context)
         graph.traverse(TraverseDirection.Forward, reporterVisitor)

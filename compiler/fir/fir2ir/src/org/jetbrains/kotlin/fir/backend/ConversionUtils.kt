@@ -347,7 +347,7 @@ private fun FirClass<*>.getSuperTypesAsIrClasses(
     val irClass =
         declarationStorage.classifierStorage.getIrClassSymbol(symbol).owner as? IrClass ?: return null
 
-    return irClass.superTypes.mapNotNull { it.classifierOrNull?.owner as? IrClass }.toSet()
+    return irClass.superTypes.mapNotNullTo(mutableSetOf()) { it.classifierOrNull?.owner as? IrClass }
 }
 
 internal fun FirProperty.generateOverriddenAccessorSymbols(
