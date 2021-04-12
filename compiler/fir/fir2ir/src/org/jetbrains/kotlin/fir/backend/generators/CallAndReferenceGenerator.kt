@@ -489,7 +489,7 @@ class CallAndReferenceGenerator(
                         val function = if (calleeReference == FirReferencePlaceholderForResolvedAnnotations) {
                             val coneClassLikeType = (call as FirAnnotationCall).annotationTypeRef.coneTypeSafe<ConeClassLikeType>()
                             val firClass = (coneClassLikeType?.lookupTag?.toSymbol(session) as? FirRegularClassSymbol)?.fir
-                            firClass?.declarations?.filterIsInstance<FirConstructor>()?.firstOrNull()
+                            firClass?.declarations?.find { it is FirConstructor }?.let { it as FirConstructor }
                         } else {
                             ((calleeReference as? FirResolvedNamedReference)?.resolvedSymbol as? FirFunctionSymbol<*>)?.fir
                         }

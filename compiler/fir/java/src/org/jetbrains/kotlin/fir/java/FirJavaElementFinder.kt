@@ -88,7 +88,9 @@ class FirJavaElementFinder(
 
         newTypeParameterList(
             stub,
-            firClass.typeParameters.filterIsInstance<FirTypeParameter>().map { Pair(it.name.asString(), arrayOf(CommonClassNames.JAVA_LANG_OBJECT)) }
+            firClass.typeParameters.mapNotNull {
+                if (it is FirTypeParameter) Pair(it.name.asString(), arrayOf(CommonClassNames.JAVA_LANG_OBJECT)) else null
+            }
         )
 
         val superTypeRefs = when {
@@ -98,8 +100,10 @@ class FirJavaElementFinder(
 
         stub.addSupertypesReferencesLists(firClass, superTypeRefs, session)
 
-        for (nestedClass in firClass.declarations.filterIsInstance<FirRegularClass>()) {
-            buildStub(nestedClass, stub)
+        for (declaration in firClass.declarations) {
+            if (declaration is FirRegularClass) {
+                buildStub(declaration, stub)
+            }
         }
 
         return stub

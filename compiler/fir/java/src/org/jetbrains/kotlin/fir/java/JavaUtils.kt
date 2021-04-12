@@ -431,11 +431,13 @@ private fun JavaClassifierType.toConeKotlinTypeForFlexibleBound(
 private fun FirRegularClass.createRawArguments(
     defaultArgs: List<ConeStarProjection>,
     position: TypeComponentPosition
-) = typeParameters.filterIsInstance<FirTypeParameter>().map { typeParameter ->
-    val erasedUpperBound = typeParameter.getErasedUpperBound {
-        defaultType().withArguments(defaultArgs.toTypedArray())
-    }
-    computeRawProjection(session, typeParameter, position, erasedUpperBound)
+) = typeParameters.mapNotNull { typeParameter ->
+    if (typeParameter is FirTypeParameter) {
+        val erasedUpperBound = typeParameter.getErasedUpperBound {
+            defaultType().withArguments(defaultArgs.toTypedArray())
+        }
+        computeRawProjection(session, typeParameter, position, erasedUpperBound)
+    } else null
 }
 
 private fun buildEnumCall(session: FirSession, classId: ClassId?, entryName: Name?) =
@@ -512,7 +514,7 @@ private fun buildArgumentMapping(
         lookupTag.bindSymbolToLookupTag(session, it)
     } ?: return null
     val annotationConstructor =
-        (annotationClassSymbol.fir as FirRegularClass).declarations.filterIsInstance<FirConstructor>().first()
+        (annotationClassSymbol.fir as FirRegularClass).declarations.first { it is FirConstructor } as FirConstructor
     val mapping = annotationArguments.associateTo(linkedMapOf()) { argument ->
         val parameter = annotationConstructor.valueParameters.find { it.name == (argument.name ?: JavaSymbolProvider.VALUE_METHOD_NAME) }
             ?: return null

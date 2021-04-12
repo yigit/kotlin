@@ -158,9 +158,10 @@ private fun createScopesForNestedClasses(
                 ?.wrapNestedClassifierScopeWithSubstitutionForSuperType(it, session)
         }
         addIfNotNull(klass.typeParametersScope())
-        val companionObjects = klass.declarations.filterIsInstance<FirRegularClass>().filter { it.isCompanion }
-        for (companionObject in companionObjects) {
-            addIfNotNull(nestedClassifierScope(companionObject))
+        for (declaration in klass.declarations) {
+            if (declaration is FirRegularClass && declaration.isCompanion) {
+                addIfNotNull(nestedClassifierScope(declaration))
+            }
         }
         addIfNotNull(nestedClassifierScope(klass))
     }

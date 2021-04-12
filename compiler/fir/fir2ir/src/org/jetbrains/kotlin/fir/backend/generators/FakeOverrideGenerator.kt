@@ -70,7 +70,7 @@ class FakeOverrideGenerator(
         val result = mutableListOf<IrDeclaration>()
         val useSiteMemberScope = klass.unsubstitutedScope(session, scopeSession, withForcedTypeCalculator = true)
         val superTypesCallableNames = useSiteMemberScope.getCallableNames()
-        val realDeclarationSymbols = realDeclarations.filterIsInstance<FirSymbolOwner<*>>().mapTo(mutableSetOf(), FirSymbolOwner<*>::symbol)
+        val realDeclarationSymbols = realDeclarations.mapNotNullTo(mutableSetOf()) { (it as? FirSymbolOwner<*>)?.symbol }
 
         for (name in superTypesCallableNames) {
             generateFakeOverridesForName(this, useSiteMemberScope, name, klass, result, realDeclarationSymbols)

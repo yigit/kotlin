@@ -470,8 +470,8 @@ class FirMemberDeserializer(private val c: FirDeserializationContext) {
             this.symbol = symbol
             resolvePhase = FirResolvePhase.ANALYZED_DEPENDENCIES
             this.typeParameters +=
-                typeParameters.filterIsInstance<FirTypeParameter>()
-                    .map { buildConstructedClassTypeParameterRef { this.symbol = it.symbol } }
+                typeParameters
+                    .mapNotNull { if (it is FirTypeParameter) buildConstructedClassTypeParameterRef { this.symbol = it.symbol } else null }
             valueParameters += local.memberDeserializer.valueParameters(
                 proto.valueParameterList,
                 proto,

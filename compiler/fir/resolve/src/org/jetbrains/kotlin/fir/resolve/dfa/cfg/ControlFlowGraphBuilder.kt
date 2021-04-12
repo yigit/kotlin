@@ -444,11 +444,13 @@ class ControlFlowGraphBuilder {
     }
 
     fun visitLocalClassFunctions(klass: FirClass<*>, node: CFGNodeWithCfgOwner<*>) {
-        klass.declarations.filterIsInstance<FirFunction<*>>().forEach { function ->
-            val functionGraph = function.controlFlowGraphReference?.controlFlowGraph
-            if (functionGraph != null && functionGraph.owner == null) {
-                addEdge(node, functionGraph.enterNode, preferredKind = EdgeKind.CfgForward)
-                node.addSubGraph(functionGraph)
+        klass.declarations.forEach { declaration ->
+            if (declaration is FirFunction<*>) {
+                val functionGraph = declaration.controlFlowGraphReference?.controlFlowGraph
+                if (functionGraph != null && functionGraph.owner == null) {
+                    addEdge(node, functionGraph.enterNode, preferredKind = EdgeKind.CfgForward)
+                    node.addSubGraph(functionGraph)
+                }
             }
         }
     }

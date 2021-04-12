@@ -211,7 +211,10 @@ class JavaClassUseSiteMemberScope(
             return super.processFunctionsByName(name, processor)
         }
 
-        val overriddenProperties = potentialPropertyNames.flatMap(this::getProperties).filterIsInstance<FirPropertySymbol>()
+        val overriddenProperties = ArrayList<FirPropertySymbol>()
+        potentialPropertyNames.forEach { potentialPropertyName ->
+            this.getProperties(potentialPropertyName).forEach { if (it is FirPropertySymbol) overriddenProperties.add(it) }
+        }
 
         specialFunctions.getOrPut(name) {
             doProcessSpecialFunctions(name, overriddenProperties, renamedSpecialBuiltInNames)
@@ -369,14 +372,12 @@ class JavaClassUseSiteMemberScope(
         return renamedSpecialBuiltInNames.any {
             // e.g. 'removeAt' or 'toInt'
                 builtinName ->
-            val builtinSpecialFromSuperTypes =
-                getFunctionsFromSupertypes(builtinName).filter { it.getOverriddenBuiltinWithDifferentJvmName() != null }
-            if (builtinSpecialFromSuperTypes.isEmpty()) return@any false
 
-            val currentJvmDescriptor = fir.computeJvmDescriptor(customName = builtinName.asString())
+            val currentJvmDescriptor by lazy { fir.computeJvmDescriptor(customName = builtinName.asString()) }
 
-            builtinSpecialFromSuperTypes.any { builtinSpecial ->
-                builtinSpecial.fir.computeJvmDescriptor() == currentJvmDescriptor
+            getFunctionsFromSupertypes(builtinName).any { builtinSpecial ->
+                builtinSpecial.getOverriddenBuiltinWithDifferentJvmName() != null &&
+                        builtinSpecial.fir.computeJvmDescriptor() == currentJvmDescriptor
             }
         }
     }
@@ -422,15 +423,12 @@ class JavaClassUseSiteMemberScope(
     private fun FirNamedFunctionSymbol.shouldBeVisibleAsOverrideOfBuiltInWithErasedValueParameters(): Boolean {
         val name = fir.name
         if (!name.sameAsBuiltinMethodWithErasedValueParameters) return false
-        val candidatesToOverride =
-            getFunctionsFromSupertypes(name).mapNotNull {
-                it.getOverriddenBuiltinFunctionWithErasedValueParametersInJava()
-            }
 
         val jvmDescriptor = fir.computeJvmDescriptor()
 
-        return candidatesToOverride.any { candidate ->
-            candidate.fir.computeJvmDescriptor() == jvmDescriptor && this.hasErasedParameters()
+        return getFunctionsFromSupertypes(name).any {
+            val candidate = it.getOverriddenBuiltinFunctionWithErasedValueParametersInJava()
+            candidate != null && candidate.fir.computeJvmDescriptor() == jvmDescriptor && this.hasErasedParameters()
         }
     }
 

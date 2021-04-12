@@ -133,8 +133,10 @@ class FirElementSerializer private constructor(
         }
 
         if (regularClass != null && regularClass.classKind != ClassKind.ENUM_ENTRY) {
-            for (constructor in regularClass.declarations.filterIsInstance<FirConstructor>()) {
-                builder.addConstructor(constructorProto(constructor))
+            for (declaration in regularClass.declarations) {
+                if (declaration is FirConstructor) {
+                    builder.addConstructor(constructorProto(declaration))
+                }
             }
         }
 
@@ -152,16 +154,17 @@ class FirElementSerializer private constructor(
             }
         }
 
-        val nestedClassifiers = klass.declarations.filterIsInstance<FirClassLikeDeclaration<*>>()
-        for (nestedClassifier in nestedClassifiers) {
-            if (nestedClassifier is FirTypeAlias) {
-                typeAliasProto(nestedClassifier)?.let { builder.addTypeAlias(it) }
-            } else if (nestedClassifier is FirRegularClass) {
-                if (!extension.shouldSerializeNestedClass(nestedClassifier)) {
-                    continue
+        loop@ for (nestedClassifier in klass.declarations) {
+            when (nestedClassifier) {
+                is FirTypeAlias -> {
+                    typeAliasProto(nestedClassifier)?.let { builder.addTypeAlias(it) }
                 }
-
-                builder.addNestedClassName(getSimpleNameIndex(nestedClassifier.name))
+                is FirRegularClass -> {
+                    if (!extension.shouldSerializeNestedClass(nestedClassifier)) {
+                        continue@loop
+                    }
+                    builder.addNestedClassName(getSimpleNameIndex(nestedClassifier.name))
+                }
             }
         }
 
@@ -792,6 +795,7 @@ class FirElementSerializer private constructor(
 
     private fun useTypeTable(): Boolean = extension.shouldUseTypeTable()
 
+    @Suppress("unused")
     private fun FirDeclaration.hasInlineClassTypesInSignature(): Boolean {
         // TODO
         return false
@@ -881,9 +885,12 @@ class FirElementSerializer private constructor(
 
     private operator fun FirArgumentList.get(name: Name): FirExpression? {
         // TODO: constant evaluation
-        return arguments.filterIsInstance<FirNamedArgumentExpression>().find {
-            it.name == name
-        }?.expression
+        for (argument in arguments) {
+            if (argument is FirNamedArgumentExpression && argument.name == name) {
+                return  argument.expression
+            }
+        }
+        return null
     }
 
 

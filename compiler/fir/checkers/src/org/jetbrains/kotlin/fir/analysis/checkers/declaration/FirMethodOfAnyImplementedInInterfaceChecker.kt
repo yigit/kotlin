@@ -25,10 +25,10 @@ object FirMethodOfAnyImplementedInInterfaceChecker : FirRegularClassChecker(), F
         context.session.symbolProvider.getClassLikeSymbolByFqName(anyClassId)
             ?.fir.safeAs<FirRegularClass>()
             ?.declarations
-            ?.filterIsInstance<FirSimpleFunction>()
-            ?.filter { it !is FirConstructor }
             ?.forEach {
-                collect(it)
+                if (it is FirSimpleFunction && it !is FirConstructor) {
+                    collect(it)
+                }
             }
 
         inspector = this

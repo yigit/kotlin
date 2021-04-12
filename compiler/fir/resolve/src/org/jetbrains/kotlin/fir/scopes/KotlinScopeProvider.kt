@@ -36,7 +36,7 @@ class KotlinScopeProvider(
             val decoratedDeclaredMemberScope =
                 declaredMemberScopeDecorator(klass, declaredScope, useSiteSession, scopeSession)
 
-            val delegateFields = klass.declarations.filterIsInstance<FirField>().filter { it.isSynthetic }
+            val delegateFields = klass.declarations.mapNotNull { if (it is FirField && it.isSynthetic) it else null }
             val scopes = lookupSuperTypes(klass, lookupInterfaces = true, deep = false, useSiteSession = useSiteSession)
                 .mapNotNull { useSiteSuperType ->
                     useSiteSuperType.scopeForSupertype(useSiteSession, scopeSession, klass, decoratedDeclaredMemberScope, delegateFields)

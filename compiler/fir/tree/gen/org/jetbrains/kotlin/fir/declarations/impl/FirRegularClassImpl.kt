@@ -67,7 +67,7 @@ internal class FirRegularClassImpl(
         transformStatus(transformer, data)
         controlFlowGraphReference = controlFlowGraphReference?.transform(transformer, data)
         transformDeclarations(transformer, data)
-        companionObject = declarations.asSequence().filterIsInstance<FirRegularClass>().firstOrNull { it.status.isCompanion }
+        companionObject = declarations.firstOrNull { it is FirRegularClass && it.status.isCompanion }?.let { it as FirRegularClass }
         transformSuperTypeRefs(transformer, data)
         return this
     }

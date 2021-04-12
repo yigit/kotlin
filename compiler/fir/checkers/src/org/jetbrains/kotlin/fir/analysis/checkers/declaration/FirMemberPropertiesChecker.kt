@@ -29,7 +29,7 @@ import org.jetbrains.kotlin.lexer.KtTokens
 // See old FE's [DeclarationsChecker]
 object FirMemberPropertiesChecker : FirRegularClassChecker() {
     override fun check(declaration: FirRegularClass, context: CheckerContext, reporter: DiagnosticReporter) {
-        val memberPropertySymbols = declaration.declarations.filterIsInstance<FirProperty>().map { it.symbol }.toSet()
+        val memberPropertySymbols = declaration.declarations.mapNotNullTo(HashSet()) { if (it is FirProperty) it.symbol else null }
         val initializedInConstructor =
             mutableMapOf<FirPropertySymbol, EventOccurrencesRange>().withDefault { EventOccurrencesRange.ZERO }
         val initializedInInitOrOtherProperty =

@@ -57,11 +57,11 @@ class PersistentImplicitReceiverStack private constructor(
     }
 
     override fun lastDispatchReceiver(): ImplicitDispatchReceiverValue? {
-        return stack.filterIsInstance<ImplicitDispatchReceiverValue>().lastOrNull()
+        return stack.lastOrNull { it is ImplicitDispatchReceiverValue }?.let { it as ImplicitDispatchReceiverValue }
     }
 
     override fun lastDispatchReceiver(lookupCondition: (ImplicitReceiverValue<*>) -> Boolean): ImplicitDispatchReceiverValue? {
-        return stack.filterIsInstance<ImplicitDispatchReceiverValue>().lastOrNull(lookupCondition)
+        return stack.lastOrNull { it is ImplicitDispatchReceiverValue && lookupCondition(it) }?.let { it as ImplicitDispatchReceiverValue }
     }
 
     override fun receiversAsReversed(): List<ImplicitReceiverValue<*>> = stack.asReversed()

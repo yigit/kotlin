@@ -223,7 +223,7 @@ fun SmartPrinter.printImplementation(implementation: Implementation) {
                             field.name in setOf("dispatchReceiver", "extensionReceiver") -> {}
 
                             field.name == "companionObject" -> {
-                                println("companionObject = declarations.asSequence().filterIsInstance<FirRegularClass>().firstOrNull { it.status.isCompanion }")
+                                println("companionObject = declarations.firstOrNull { it is FirRegularClass && it.status.isCompanion }?.let { it as FirRegularClass }")
                             }
 
                             field.needsSeparateTransform -> {

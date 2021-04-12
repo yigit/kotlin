@@ -153,7 +153,7 @@ open class FirJvmMangleComputer(
             appendSignature(specialValueParamPrefix(it))
             mangleValueParameter(this, it)
         }
-        typeParameters.filterIsInstance<FirTypeParameter>().withIndex().toList()
+        typeParameters.filterIsInstance<FirTypeParameter>().withIndex()
             .collectForMangler(builder, MangleConstant.TYPE_PARAMETERS) { (index, typeParameter) ->
                 mangleTypeParameter(this, typeParameter, index)
             }

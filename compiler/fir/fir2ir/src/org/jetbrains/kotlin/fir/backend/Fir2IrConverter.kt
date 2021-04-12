@@ -310,7 +310,7 @@ class Fir2IrConverter(
             }
 
             externalDependenciesGenerator.generateUnboundSymbolsAsDependencies()
-            val stubGenerator = irProviders.filterIsInstance<DeclarationStubGenerator>().first()
+            val stubGenerator = irProviders.find { it is DeclarationStubGenerator } as DeclarationStubGenerator
             irModuleFragment.acceptVoid(ExternalPackageParentPatcher(stubGenerator))
 
             evaluateConstants(irModuleFragment)
