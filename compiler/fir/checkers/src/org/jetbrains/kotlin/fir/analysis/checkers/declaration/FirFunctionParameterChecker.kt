@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.fir.types.arrayElementType
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.isUnsignedTypeOrNullableUnsignedType
 import org.jetbrains.kotlin.types.AbstractTypeChecker
+import org.jetbrains.kotlin.utils.SmartList
 
 object FirFunctionParameterChecker : FirFunctionChecker() {
     override fun check(declaration: FirFunction<*>, context: CheckerContext, reporter: DiagnosticReporter) {
@@ -46,7 +47,7 @@ object FirFunctionParameterChecker : FirFunctionChecker() {
     }
 
     private fun checkVarargParameters(function: FirFunction<*>, context: CheckerContext, reporter: DiagnosticReporter) {
-        val varargParameters = function.valueParameters.filter { it.isVararg }
+        val varargParameters = function.valueParameters.filterTo(SmartList()) { it.isVararg }
         if (varargParameters.size > 1) {
             for (parameter in varargParameters) {
                 reporter.reportOnWithSuppression(parameter, FirErrors.MULTIPLE_VARARG_PARAMETERS, context)

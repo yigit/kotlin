@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.serialization.deserialization.descriptors.Deserializ
 import org.jetbrains.kotlin.serialization.deserialization.getClassId
 import org.jetbrains.kotlin.serialization.deserialization.getName
 import org.jetbrains.kotlin.types.ConstantValueKind
+import org.jetbrains.kotlin.utils.SmartList
 
 abstract class AbstractAnnotationDeserializer(
     private val session: FirSession
@@ -55,13 +56,13 @@ abstract class AbstractAnnotationDeserializer(
 
     fun loadClassAnnotations(classProto: ProtoBuf.Class, nameResolver: NameResolver): List<FirAnnotationCall> {
         if (!Flags.HAS_ANNOTATIONS.get(classProto.flags)) return emptyList()
-        val annotations = classProto.getExtension(protocol.classAnnotation).orEmpty()
-        return annotations.map { deserializeAnnotation(it, nameResolver) }
+        val annotations = classProto.getExtension(protocol.classAnnotation)?.takeIf { it.isNotEmpty() } ?: return emptyList()
+        return annotations.mapTo(SmartList()) { deserializeAnnotation(it, nameResolver) }
     }
 
     fun loadTypeAliasAnnotations(aliasProto: ProtoBuf.TypeAlias, nameResolver: NameResolver): List<FirAnnotationCall> {
-        if (!Flags.HAS_ANNOTATIONS.get(aliasProto.flags)) return emptyList()
-        return aliasProto.annotationList.map { deserializeAnnotation(it, nameResolver) }
+        if (!Flags.HAS_ANNOTATIONS.get(aliasProto.flags) || aliasProto.annotationList.isEmpty()) return emptyList()
+        return aliasProto.annotationList.mapTo(SmartList()) { deserializeAnnotation(it, nameResolver) }
     }
 
     open fun loadFunctionAnnotations(
@@ -71,8 +72,8 @@ abstract class AbstractAnnotationDeserializer(
         typeTable: TypeTable
     ): List<FirAnnotationCall> {
         if (!Flags.HAS_ANNOTATIONS.get(functionProto.flags)) return emptyList()
-        val annotations = functionProto.getExtension(protocol.functionAnnotation).orEmpty()
-        return annotations.map { deserializeAnnotation(it, nameResolver) }
+        val annotations = functionProto.getExtension(protocol.functionAnnotation)?.takeIf { it.isNotEmpty() } ?: return emptyList()
+        return annotations.mapTo(SmartList()) { deserializeAnnotation(it, nameResolver) }
     }
 
     open fun loadPropertyAnnotations(
@@ -83,8 +84,8 @@ abstract class AbstractAnnotationDeserializer(
         typeTable: TypeTable
     ): List<FirAnnotationCall> {
         if (!Flags.HAS_ANNOTATIONS.get(propertyProto.flags)) return emptyList()
-        val annotations = propertyProto.getExtension(protocol.propertyAnnotation).orEmpty()
-        return annotations.map { deserializeAnnotation(it, nameResolver, AnnotationUseSiteTarget.PROPERTY) }
+        val annotations = propertyProto.getExtension(protocol.propertyAnnotation)?.takeIf { it.isNotEmpty() } ?: return emptyList()
+        return annotations.mapTo(SmartList()) { deserializeAnnotation(it, nameResolver, AnnotationUseSiteTarget.PROPERTY) }
     }
 
     open fun loadPropertyBackingFieldAnnotations(
@@ -113,8 +114,8 @@ abstract class AbstractAnnotationDeserializer(
         getterFlags: Int
     ): List<FirAnnotationCall> {
         if (!Flags.HAS_ANNOTATIONS.get(getterFlags)) return emptyList()
-        val annotations = propertyProto.getExtension(protocol.propertyGetterAnnotation).orEmpty()
-        return annotations.map { deserializeAnnotation(it, nameResolver, AnnotationUseSiteTarget.PROPERTY_GETTER) }
+        val annotations = propertyProto.getExtension(protocol.propertyGetterAnnotation)?.takeIf { it.isNotEmpty() } ?: return emptyList()
+        return annotations.mapTo(SmartList()) { deserializeAnnotation(it, nameResolver, AnnotationUseSiteTarget.PROPERTY_GETTER) }
     }
 
     open fun loadPropertySetterAnnotations(
@@ -125,8 +126,8 @@ abstract class AbstractAnnotationDeserializer(
         setterFlags: Int
     ): List<FirAnnotationCall> {
         if (!Flags.HAS_ANNOTATIONS.get(setterFlags)) return emptyList()
-        val annotations = propertyProto.getExtension(protocol.propertySetterAnnotation).orEmpty()
-        return annotations.map { deserializeAnnotation(it, nameResolver, AnnotationUseSiteTarget.PROPERTY_SETTER) }
+        val annotations = propertyProto.getExtension(protocol.propertySetterAnnotation)?.takeIf { it.isNotEmpty() } ?: return emptyList()
+        return annotations.mapTo(SmartList()) { deserializeAnnotation(it, nameResolver, AnnotationUseSiteTarget.PROPERTY_SETTER) }
     }
 
     open fun loadConstructorAnnotations(
@@ -136,8 +137,8 @@ abstract class AbstractAnnotationDeserializer(
         typeTable: TypeTable
     ): List<FirAnnotationCall> {
         if (!Flags.HAS_ANNOTATIONS.get(constructorProto.flags)) return emptyList()
-        val annotations = constructorProto.getExtension(protocol.constructorAnnotation).orEmpty()
-        return annotations.map { deserializeAnnotation(it, nameResolver) }
+        val annotations = constructorProto.getExtension(protocol.constructorAnnotation)?.takeIf { it.isNotEmpty() } ?: return emptyList()
+        return annotations.mapTo(SmartList()) { deserializeAnnotation(it, nameResolver) }
     }
 
     open fun loadValueParameterAnnotations(
@@ -151,8 +152,8 @@ abstract class AbstractAnnotationDeserializer(
         parameterIndex: Int
     ): List<FirAnnotationCall> {
         if (!Flags.HAS_ANNOTATIONS.get(valueParameterProto.flags)) return emptyList()
-        val annotations = valueParameterProto.getExtension(protocol.parameterAnnotation).orEmpty()
-        return annotations.map { deserializeAnnotation(it, nameResolver) }
+        val annotations = valueParameterProto.getExtension(protocol.parameterAnnotation)?.takeIf { it.isNotEmpty() } ?: return emptyList()
+        return annotations.mapTo(SmartList()) { deserializeAnnotation(it, nameResolver) }
     }
 
     open fun loadExtensionReceiverParameterAnnotations(
@@ -189,9 +190,9 @@ abstract class AbstractAnnotationDeserializer(
 
             val parameterByName = constructor.valueParameters.associateBy { it.name }
 
-            arguments = proto.argumentList.mapNotNull {
+            arguments = proto.argumentList.mapNotNullTo(SmartList()) {
                 val name = nameResolver.getName(it.nameId)
-                val parameter = parameterByName[name] ?: return@mapNotNull null
+                val parameter = parameterByName[name] ?: return@mapNotNullTo null
                 val value = resolveValue(parameter.returnTypeRef.coneType, it.value, nameResolver)
                 buildNamedArgumentExpression {
                     expression = value
