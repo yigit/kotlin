@@ -18,13 +18,14 @@ fun ConeClassLikeType.fullyExpandedType(
     expandedConeType: (FirTypeAlias) -> ConeClassLikeType? = FirTypeAlias::expandedConeType,
 ): ConeClassLikeType {
     if (this is ConeClassLikeTypeImpl) {
-        val expandedTypeAndSession = cachedExpandedType
-        if (expandedTypeAndSession != null && expandedTypeAndSession.first === useSiteSession) {
-            return expandedTypeAndSession.second
+        val expandedType = cachedExpandedType
+        if (expandedType != null && cachedSession === useSiteSession) {
+            return expandedType
         }
 
         val computedExpandedType = fullyExpandedTypeNoCache(useSiteSession, expandedConeType)
-        cachedExpandedType = Pair(useSiteSession, computedExpandedType)
+        cachedExpandedType = computedExpandedType
+        cachedSession = useSiteSession
         return computedExpandedType
     }
 

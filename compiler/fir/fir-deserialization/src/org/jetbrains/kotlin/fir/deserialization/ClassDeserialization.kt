@@ -96,10 +96,8 @@ fun deserializeClassToSymbol(
             containerSource,
             symbol
         )
-    if (status.isCompanion) {
-        parentContext?.let {
-            context.annotationDeserializer.inheritAnnotationInfo(it.annotationDeserializer)
-        }
+    if (status.isCompanion && parentContext != null) {
+        context.annotationDeserializer.inheritAnnotationInfo(parentContext.annotationDeserializer)
     }
     buildRegularClass {
         this.session = session
@@ -112,73 +110,62 @@ fun deserializeClassToSymbol(
 
         resolvePhase = FirResolvePhase.ANALYZED_DEPENDENCIES
 
-        typeParameters += context.typeDeserializer.ownTypeParameters.map { it.fir }
-        if (status.isInner)
-            typeParameters += parentContext?.allTypeParameters?.map { buildOuterClassTypeParameterRef { this.symbol = it } }.orEmpty()
+        context.typeDeserializer.ownTypeParameters.mapTo(typeParameters) { it.fir }
+        if (status.isInner) {
+            parentContext?.allTypeParameters?.mapTo(typeParameters) {
+                buildOuterClassTypeParameterRef { this.symbol = it }
+            }
+        }
 
         val typeDeserializer = context.typeDeserializer
         val classDeserializer = context.memberDeserializer
 
-        val superTypesDeserialized = classProto.supertypes(context.typeTable).map { supertypeProto ->
-            typeDeserializer.simpleType(supertypeProto, ConeAttributes.Empty)
+        classProto.supertypes(context.typeTable).mapNotNullTo(superTypeRefs) { supertypeProto ->
+            val superTypeDeserialized = typeDeserializer.simpleType(supertypeProto, ConeAttributes.Empty) ?: return@mapNotNullTo null
+            buildResolvedTypeRef { type = superTypeDeserialized }
         }
 
-        superTypesDeserialized.mapNotNullTo(superTypeRefs) {
-            if (it == null) return@mapNotNullTo null
-            buildResolvedTypeRef { type = it }
+        for (function in classProto.functionList) {
+            declarations += classDeserializer.loadFunction(function, classProto, symbol)
         }
 
-        addDeclarations(
-            classProto.functionList.map {
-                classDeserializer.loadFunction(it, classProto, symbol)
-            }
-        )
+        for (property in classProto.propertyList) {
+            declarations += classDeserializer.loadProperty(property, classProto, symbol)
+        }
 
-        addDeclarations(
-            classProto.propertyList.map {
-                classDeserializer.loadProperty(it, classProto, symbol)
-            }
-        )
+        for (constructor in classProto.constructorList) {
+            declarations += classDeserializer.loadConstructor(constructor, classProto, this)
+        }
 
-        addDeclarations(
-            classProto.constructorList.map {
-                classDeserializer.loadConstructor(it, classProto, this)
-            }
-        )
+        for (nestedNameId in classProto.nestedClassNameList) {
+            val nestedClassId = classId.createNestedClassId(Name.identifier(nameResolver.getString(nestedNameId)))
+            deserializeNestedClass(nestedClassId, context)?.fir?.let(this::addDeclaration)
+        }
 
-        addDeclarations(
-            classProto.nestedClassNameList.mapNotNull { nestedNameId ->
-                val nestedClassId = classId.createNestedClassId(Name.identifier(nameResolver.getString(nestedNameId)))
-                deserializeNestedClass(nestedClassId, context)?.fir
-            }
-        )
+        for (enumEntryProto in classProto.enumEntryList) {
+            val enumEntryName = nameResolver.getName(enumEntryProto.name)
 
-        addDeclarations(
-            classProto.enumEntryList.mapNotNull { enumEntryProto ->
-                val enumEntryName = nameResolver.getName(enumEntryProto.name)
-
-                val enumType = ConeClassLikeTypeImpl(symbol.toLookupTag(), emptyArray(), false)
-                val property = buildEnumEntry {
-                    this.session = session
-                    this.origin = FirDeclarationOrigin.Library
-                    returnTypeRef = buildResolvedTypeRef { type = enumType }
-                    name = enumEntryName
-                    this.symbol = FirVariableSymbol(CallableId(classId, enumEntryName))
-                    this.status = FirResolvedDeclarationStatusImpl(
-                        Visibilities.Public,
-                        Modality.FINAL,
-                        EffectiveVisibility.Public
-                    ).apply {
-                        isStatic = true
-                    }
-                    resolvePhase = FirResolvePhase.ANALYZED_DEPENDENCIES
-                }.apply {
-                    containingClassAttr = context.dispatchReceiver!!.lookupTag
+            val enumType = ConeClassLikeTypeImpl(symbol.toLookupTag(), emptyArray(), false)
+            val property = buildEnumEntry {
+                this.session = session
+                this.origin = FirDeclarationOrigin.Library
+                returnTypeRef = buildResolvedTypeRef { type = enumType }
+                name = enumEntryName
+                this.symbol = FirVariableSymbol(CallableId(classId, enumEntryName))
+                this.status = FirResolvedDeclarationStatusImpl(
+                    Visibilities.Public,
+                    Modality.FINAL,
+                    EffectiveVisibility.Public
+                ).apply {
+                    isStatic = true
                 }
-
-                property
+                resolvePhase = FirResolvePhase.ANALYZED_DEPENDENCIES
+            }.apply {
+                containingClassAttr = context.dispatchReceiver!!.lookupTag
             }
-        )
+
+            declarations += property
+        }
 
         if (classKind == ClassKind.ENUM_CLASS) {
             generateValuesFunction(

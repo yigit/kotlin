@@ -119,12 +119,11 @@ open class FirDeclarationsResolveTransformer(transformer: FirBodyResolveTransfor
             return transformLocalVariable(property)
         }
 
-        val returnTypeRef = property.returnTypeRef
-        if (returnTypeRef !is FirImplicitTypeRef && implicitTypeOnly) return property
-        if (property.resolvePhase == transformerPhase) return property
         if (property.resolvePhase == FirResolvePhase.BODY_RESOLVE || property.resolvePhase == transformerPhase) {
             return property
         }
+        val returnTypeRef = property.returnTypeRef
+        if (returnTypeRef !is FirImplicitTypeRef && implicitTypeOnly) return property
 
         dataFlowAnalyzer.enterProperty(property)
         doTransformTypeParameters(property)
