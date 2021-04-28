@@ -191,7 +191,7 @@ class StatementGenerator(
         val irReturnedExpression = expression.returnedExpression?.let { generateExpression(it) }
             ?: IrGetObjectValueImpl(
                 expression.startOffsetSkippingComments, expression.endOffset, context.irBuiltIns.unitType,
-                context.symbolTable.referenceClass(context.builtIns.unit)
+                context.irBuiltIns.unitClass
             )
         return IrReturnImpl(
             expression.startOffsetSkippingComments, expression.endOffset, context.irBuiltIns.nothingType,
