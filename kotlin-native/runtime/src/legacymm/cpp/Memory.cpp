@@ -3738,4 +3738,8 @@ kotlin::ThreadState kotlin::GetThreadState(MemoryState* thread) noexcept {
     return ThreadState::kRunnable;
 }
 
+ALWAYS_INLINE kotlin::CalledFromNativeGuard::CalledFromNativeGuard() noexcept {
+    // no-op, used by the new MM only.
+}
+
 const bool kotlin::kSupportsMultipleMutators = true;
