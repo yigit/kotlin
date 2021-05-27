@@ -102,7 +102,7 @@ static void injectToRuntime();
         {
           kotlin::ThreadStateGuard guard(kotlin::ThreadState::kNative);
           candidate->refHolder.releaseRef();
-          [candidate releaseAsAssociatedObject];
+          [candidate releaseAsAssociatedObject:ReleaseMode::kDetachAndRelease];
         }
         return objc_retainAutoreleaseReturnValue(old);
       }
@@ -137,7 +137,7 @@ static void injectToRuntime();
   }
 }
 
--(void)releaseAsAssociatedObject {
+-(void)releaseAsAssociatedObject:(ReleaseMode)mode {
   // This function is called by the GC. It made a decision to reclaim Kotlin object, and runs
   // deallocation hooks at the moment, including deallocation of the "associated object" ([self])
   // using the [super release] call below.
@@ -148,13 +148,20 @@ static void injectToRuntime();
   // Generally retaining and releasing Kotlin object that is being deallocated would lead to
   // use-after-dispose and double-dispose problems (with unpredictable consequences) or to an assertion failure.
   // To workaround this, detach the back ref from the Kotlin object:
-  refHolder.detach();
+  if (ReleaseModeHasDetach(mode)) {
+    refHolder.detach();
+  } else {
+    // With Mark&Sweep this object should already have been detached earlier.
+    refHolder.assertDetached();
+  }
+
   // So retain/release/etc. on [self] won't affect the Kotlin object, and an attempt to get
   // the reference to it (e.g. when calling Kotlin method on [self]) would crash.
   // The latter is generally ok because can be triggered only by user-defined Swift/Obj-C
   // subclasses of Kotlin classes.
-
-  [super release];
+  if (ReleaseModeHasRelease(mode)) {
+    [super release];
+  }
 }
 
 - (instancetype)copyWithZone:(NSZone *)zone {
@@ -172,7 +179,9 @@ static void injectToRuntime();
   RETURN_RESULT_OF(Kotlin_ObjCExport_convertUnmappedObjCObject, self);
 }
 
--(void)releaseAsAssociatedObject {
+-(void)releaseAsAssociatedObject:(ReleaseMode)mode {
+  if (!ReleaseModeHasRelease(mode))
+    return;
   objc_release(self);
 }
 @end;
@@ -245,7 +254,7 @@ static void injectToRuntime() {
   Kotlin_ObjCExport_toKotlinSelector = @selector(toKotlin:);
 
   RuntimeCheck(Kotlin_ObjCExport_releaseAsAssociatedObjectSelector == nullptr, errorMessage);
-  Kotlin_ObjCExport_releaseAsAssociatedObjectSelector = @selector(releaseAsAssociatedObject);
+  Kotlin_ObjCExport_releaseAsAssociatedObjectSelector = @selector(releaseAsAssociatedObject:);
 }
 
 #endif // KONAN_OBJC_INTEROP
