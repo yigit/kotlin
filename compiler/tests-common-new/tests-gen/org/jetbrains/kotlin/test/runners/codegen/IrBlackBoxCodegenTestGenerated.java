@@ -17660,6 +17660,12 @@ public class IrBlackBoxCodegenTestGenerated extends AbstractIrBlackBoxCodegenTes
             }
 
             @Test
+            @TestMetadata("inferFromExpectedType.kt")
+            public void testInferFromExpectedType() throws Exception {
+                runTest("compiler/testData/codegen/box/inference/builderInference/inferFromExpectedType.kt");
+            }
+
+            @Test
             @TestMetadata("intersect.kt")
             public void testIntersect() throws Exception {
                 runTest("compiler/testData/codegen/box/inference/builderInference/intersect.kt");
