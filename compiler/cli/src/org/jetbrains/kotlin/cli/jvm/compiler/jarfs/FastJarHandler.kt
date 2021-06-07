@@ -14,6 +14,9 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.RandomAccessFile
+import java.lang.invoke.MethodHandles
+import java.lang.invoke.MethodType
+import java.nio.ByteBuffer
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 
@@ -167,9 +170,24 @@ private val cachedOpenFileHandles: FileAccessorCache<File, RandomAccessFileAndBu
         @Throws(IOException::class)
         override fun disposeAccessor(fileAccessor: RandomAccessFileAndBuffer) {
             fileAccessor.first.close()
+            fileAccessor.second.unmapBuffer()
         }
 
         override fun isEqual(val1: File, val2: File): Boolean {
             return val1 == val2 // reference equality to handle different jars for different ZipHandlers on the same path
         }
     }
+
+private fun ByteBuffer.unmapBuffer() {
+    if (!isDirect) return
+    try {
+        val unsafeField = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe")
+        unsafeField.isAccessible = true
+        val unsafe = unsafeField.get(null)
+        val type = MethodType.methodType(Void.TYPE, ByteBuffer::class.java)
+        val handle = MethodHandles.lookup().findVirtual(unsafe.javaClass, "invokeCleaner", type)
+        handle.invoke(unsafe, this)
+    } catch (t: Throwable) {
+        throw IOException(t)
+    }
+}
