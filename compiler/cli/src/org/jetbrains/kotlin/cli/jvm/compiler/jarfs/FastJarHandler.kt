@@ -10,10 +10,12 @@ import com.intellij.openapi.vfs.impl.ZipHandler
 import com.intellij.util.containers.FactoryMap
 import com.intellij.util.io.FileAccessorCache
 import com.intellij.util.text.ByteArrayCharSequence
+import sun.nio.ch.DirectBuffer
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.RandomAccessFile
+import java.nio.ByteBuffer
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 
@@ -167,9 +169,26 @@ private val cachedOpenFileHandles: FileAccessorCache<File, RandomAccessFileAndBu
         @Throws(IOException::class)
         override fun disposeAccessor(fileAccessor: RandomAccessFileAndBuffer) {
             fileAccessor.first.close()
+            fileAccessor.second.unmapBuffer()
         }
 
         override fun isEqual(val1: File, val2: File): Boolean {
             return val1 == val2 // reference equality to handle different jars for different ZipHandlers on the same path
         }
     }
+
+private fun ByteBuffer.unmapBuffer() {
+    if (!isDirect) return
+    try {
+//        val unsafeField = Class.forName("sun.misc.Unsafe").getDeclaredField("theUnsafe")
+//        unsafeField.isAccessible = true
+//        val unsafe = unsafeField.get(null)
+//        val type = MethodType.methodType(Void.TYPE, ByteBuffer::class.java)
+//        val handle = MethodHandles.lookup().findVirtual(unsafe.javaClass, "invokeCleaner", type)
+//        handle.invoke(unsafe, this)
+
+        (this as DirectBuffer).cleaner().clean()
+    } catch (t: Throwable) {
+        throw IOException(t)
+    }
+}
