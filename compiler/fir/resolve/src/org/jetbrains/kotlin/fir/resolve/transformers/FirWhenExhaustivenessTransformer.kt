@@ -18,13 +18,13 @@ import org.jetbrains.kotlin.fir.resolve.BodyResolveComponents
 import org.jetbrains.kotlin.fir.resolve.fullyExpandedType
 import org.jetbrains.kotlin.fir.resolve.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.AbstractFirBasedSymbol
-import org.jetbrains.kotlin.name.StandardClassIds
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirVariableSymbol
 import org.jetbrains.kotlin.fir.types.*
 import org.jetbrains.kotlin.fir.visitors.FirTransformer
 import org.jetbrains.kotlin.fir.visitors.FirVisitor
+import org.jetbrains.kotlin.name.StandardClassIds
 
 class FirWhenExhaustivenessTransformer(private val bodyResolveComponents: BodyResolveComponents) : FirTransformer<Any?>() {
     companion object {
@@ -60,31 +60,45 @@ class FirWhenExhaustivenessTransformer(private val bodyResolveComponents: BodyRe
 
         val session = bodyResolveComponents.session
         val cleanSubjectType = subjectType.fullyExpandedType(session).lowerBoundIfFlexible()
+        val unwrappedIntersectionTypes = (cleanSubjectType as? ConeIntersectionType)?.intersectedTypes ?: listOf(cleanSubjectType)
 
-        val checkers = buildList {
-            exhaustivenessCheckers.filterTo(this) { it.isApplicable(cleanSubjectType, session) }
-            if (isNotEmpty<WhenExhaustivenessChecker>() && cleanSubjectType.isMarkedNullable) {
-                add(WhenOnNullableExhaustivenessChecker)
+        val result = unwrappedIntersectionTypes.map { unwrappedSubjectType ->
+            val checkers = buildList<WhenExhaustivenessChecker> {
+                exhaustivenessCheckers.filterTo(this) { it.isApplicable(unwrappedSubjectType, session) }
+                if (isNotEmpty() && unwrappedSubjectType.isMarkedNullable) {
+                    add(WhenOnNullableExhaustivenessChecker)
+                }
+            }
+
+            if (checkers.isEmpty()) {
+                return@map ExhaustivenessStatus.NotExhaustive.NO_ELSE_BRANCH
+            }
+
+            val whenMissingCases = mutableListOf<WhenMissingCase>()
+            for (checker in checkers) {
+                checker.computeMissingCases(whenExpression, unwrappedSubjectType, session, whenMissingCases)
+            }
+            if (whenMissingCases.isEmpty() && whenExpression.branches.isEmpty()) {
+                whenMissingCases.add(WhenMissingCase.Unknown)
+            }
+
+            if (whenMissingCases.isEmpty()) {
+                ExhaustivenessStatus.Exhaustive
+            } else {
+                ExhaustivenessStatus.NotExhaustive(whenMissingCases)
             }
         }
 
-        if (checkers.isEmpty()) {
-            whenExpression.replaceExhaustivenessStatus(ExhaustivenessStatus.NotExhaustive.NO_ELSE_BRANCH)
-            return
-        }
-        val whenMissingCases = mutableListOf<WhenMissingCase>()
-        for (checker in checkers) {
-            checker.computeMissingCases(whenExpression, cleanSubjectType, session, whenMissingCases)
-        }
-        if (whenMissingCases.isEmpty() && whenExpression.branches.isEmpty()) {
-            whenMissingCases.add(WhenMissingCase.Unknown)
+        val status = when {
+            result.any { it === ExhaustivenessStatus.Exhaustive } -> {
+                ExhaustivenessStatus.Exhaustive
+            }
+            else -> {
+                result.firstOrNull { it !== ExhaustivenessStatus.NotExhaustive.NO_ELSE_BRANCH }
+                    ?: ExhaustivenessStatus.NotExhaustive.NO_ELSE_BRANCH
+            }
         }
 
-        val status = if (whenMissingCases.isEmpty()) {
-            ExhaustivenessStatus.Exhaustive
-        } else {
-            ExhaustivenessStatus.NotExhaustive(whenMissingCases)
-        }
         whenExpression.replaceExhaustivenessStatus(status)
     }
 }
