@@ -28,8 +28,12 @@ class FastJarHandler(val fileSystem: FastJarFileSystem, path: String) : ZipHandl
     init {
         RandomAccessFile(file, "r").use { randomAccessFile ->
             val mappedByteBuffer = randomAccessFile.channel.map(FileChannel.MapMode.READ_ONLY, 0, randomAccessFile.length())
-            ourEntryMap = mappedByteBuffer.parseCentralDirectory().associateBy { it.relativePath }
-            cachedManifest = ourEntryMap[MANIFEST_PATH]?.let(mappedByteBuffer::contentsToByteArray)
+            try {
+                ourEntryMap = mappedByteBuffer.parseCentralDirectory().associateBy { it.relativePath }
+                cachedManifest = ourEntryMap[MANIFEST_PATH]?.let(mappedByteBuffer::contentsToByteArray)
+            } finally {
+                mappedByteBuffer.unmapBuffer()
+            }
         }
 
         val entries: MutableMap<EntryInfo, FastJarVirtualFile> = HashMap()
