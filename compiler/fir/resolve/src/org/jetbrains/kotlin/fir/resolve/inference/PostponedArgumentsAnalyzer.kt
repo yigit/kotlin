@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.ConeTypeVariable
 import org.jetbrains.kotlin.fir.types.builder.buildErrorTypeRef
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
-import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.isMarkedNullable
 import org.jetbrains.kotlin.resolve.calls.components.PostponedArgumentsAnalyzerContext
 import org.jetbrains.kotlin.resolve.calls.inference.ConstraintSystemBuilder
@@ -147,7 +146,6 @@ class PostponedArgumentsAnalyzer(
             candidate,
             results,
             completionMode,
-            expectedTypeForReturnArguments,
             ::substitute
         )
         return results
@@ -159,7 +157,6 @@ class PostponedArgumentsAnalyzer(
         candidate: Candidate,
         results: ReturnArgumentsAnalysisResult,
         completionMode: ConstraintSystemCompletionMode,
-        expectedReturnType: ConeKotlinType? = null,
         substitute: (ConeKotlinType) -> ConeKotlinType = c.createSubstituteFunctorForLambdaAnalysis()
     ) {
         val (returnArguments, inferenceSession) = results
@@ -185,19 +182,15 @@ class PostponedArgumentsAnalyzer(
 
         val checkerSink: CheckerSink = CheckerSinkImpl(candidate)
 
-        val lastExpression = lambda.atom.body?.statements?.lastOrNull() as? FirExpression
         var hasExpressionInReturnArguments = false
         // No constraint for return expressions of lambda if it has Unit return type.
         val lambdaReturnType = lambda.returnType.let(substitute).takeUnless { it.isUnitOrFlexibleUnit }
         returnArguments.forEach {
             if (it !is FirExpression) return@forEach
             hasExpressionInReturnArguments = true
-            // If it is the last expression, and the expected type is Unit, that expression will be coerced to Unit.
-            // If the last expression is of Unit type, of course it's not coercion-to-Unit case.
-            val lastExpressionCoercedToUnit =
-                it == lastExpression && expectedReturnType?.isUnitOrFlexibleUnit == true && !it.typeRef.coneType.isUnitOrFlexibleUnit
+
             // No constraint for the last expression of lambda if it will be coerced to Unit.
-            if (!lastExpressionCoercedToUnit && !c.getBuilder().hasContradiction) {
+            if (!c.getBuilder().hasContradiction) {
                 candidate.resolveArgumentExpression(
                     c.getBuilder(),
                     it,
