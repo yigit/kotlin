@@ -1221,3 +1221,13 @@ if (disableVerificationTasks) {
         }
     }
 }
+
+afterEvaluate {
+    val cacheRedirectorEnabled = findProperty("cacheRedirectorEnabled")?.toString()?.toBoolean() == true
+    if (cacheRedirectorEnabled) {
+        rootProject.plugins.withType(org.jetbrains.kotlin.gradle.targets.js.yarn.YarnPlugin::class.java) {
+            rootProject.the<org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension>().downloadBaseUrl =
+                "https://cache-redirector.jetbrains.com/github.com/yarnpkg/yarn/releases/download"
+        }
+    }
+}
