@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.descriptors.konan.CompiledKlibModuleOrigin
 import org.jetbrains.kotlin.descriptors.konan.CurrentKlibModuleOrigin
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.ir.declarations.*
+import org.jetbrains.kotlin.ir.descriptors.IrBuiltInsOverDescriptors
 import org.jetbrains.kotlin.ir.expressions.IrClassReference
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
@@ -614,10 +615,10 @@ private fun ObjCExportCodeGenerator.emitBoxConverters() {
     emitBoxConverter(irBuiltIns.shortClass, ObjCValueType.SHORT, "numberWithShort:")
     emitBoxConverter(irBuiltIns.intClass, ObjCValueType.INT, "numberWithInt:")
     emitBoxConverter(irBuiltIns.longClass, ObjCValueType.LONG_LONG, "numberWithLongLong:")
-    emitBoxConverter(symbols.uByte, ObjCValueType.UNSIGNED_CHAR, "numberWithUnsignedChar:")
-    emitBoxConverter(symbols.uShort, ObjCValueType.UNSIGNED_SHORT, "numberWithUnsignedShort:")
-    emitBoxConverter(symbols.uInt, ObjCValueType.UNSIGNED_INT, "numberWithUnsignedInt:")
-    emitBoxConverter(symbols.uLong, ObjCValueType.UNSIGNED_LONG_LONG, "numberWithUnsignedLongLong:")
+    emitBoxConverter(symbols.uByte!!, ObjCValueType.UNSIGNED_CHAR, "numberWithUnsignedChar:")
+    emitBoxConverter(symbols.uShort!!, ObjCValueType.UNSIGNED_SHORT, "numberWithUnsignedShort:")
+    emitBoxConverter(symbols.uInt!!, ObjCValueType.UNSIGNED_INT, "numberWithUnsignedInt:")
+    emitBoxConverter(symbols.uLong!!, ObjCValueType.UNSIGNED_LONG_LONG, "numberWithUnsignedLongLong:")
     emitBoxConverter(irBuiltIns.floatClass, ObjCValueType.FLOAT, "numberWithFloat:")
     emitBoxConverter(irBuiltIns.doubleClass, ObjCValueType.DOUBLE, "numberWithDouble:")
 }
@@ -663,8 +664,10 @@ private fun ObjCExportCodeGenerator.generateContinuationToCompletionConverter(
     }
 }
 
+// TODO: find out what to use instead here and in the dependent code
 private val ObjCExportBlockCodeGenerator.mappedFunctionNClasses get() =
-    context.ir.symbols.functionIrClassFactory.builtFunctionNClasses
+    // failed attempt to migrate to descriptor-less IrBuiltIns
+    ((context.irBuiltIns as IrBuiltInsOverDescriptors).functionFactory as BuiltInFictitiousFunctionIrClassFactory).builtFunctionNClasses
         .filter { it.descriptor.isMappedFunctionClass() }
 
 private fun ObjCExportBlockCodeGenerator.emitFunctionConverters() {
