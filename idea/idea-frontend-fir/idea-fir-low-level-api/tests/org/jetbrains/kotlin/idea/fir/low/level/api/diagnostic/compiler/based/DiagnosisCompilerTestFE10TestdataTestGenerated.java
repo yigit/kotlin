@@ -20354,6 +20354,11 @@ public class DiagnosisCompilerTestFE10TestdataTestGenerated extends AbstractDiag
                 runTest("compiler/testData/diagnostics/tests/resolve/parameterAsDefaultValueInLocalFunction.kt");
             }
 
+            @TestMetadata("propertyInCompanionOfEnum.kt")
+            public void testPropertyInCompanionOfEnum() throws Exception {
+                runTest("compiler/testData/diagnostics/tests/resolve/propertyInCompanionOfEnum.kt");
+            }
+
             @TestMetadata("resolveAnnotatedLambdaArgument.kt")
             public void testResolveAnnotatedLambdaArgument() throws Exception {
                 runTest("compiler/testData/diagnostics/tests/resolve/resolveAnnotatedLambdaArgument.kt");
