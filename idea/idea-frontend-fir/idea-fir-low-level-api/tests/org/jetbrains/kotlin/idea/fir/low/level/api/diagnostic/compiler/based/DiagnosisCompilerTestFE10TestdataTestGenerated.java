@@ -1915,6 +1915,11 @@ public class DiagnosisCompilerTestFE10TestdataTestGenerated extends AbstractDiag
                 runTest("compiler/testData/diagnostics/tests/callableReference/correctInfoAfterArrayLikeCall.kt");
             }
 
+            @TestMetadata("deprecatedCompanionReceiverInParentheses.kt")
+            public void testDeprecatedCompanionReceiverInParentheses() throws Exception {
+                runTest("compiler/testData/diagnostics/tests/callableReference/deprecatedCompanionReceiverInParentheses.kt");
+            }
+
             @TestMetadata("ea81649_errorPropertyLHS.kt")
             public void testEa81649_errorPropertyLHS() throws Exception {
                 runTest("compiler/testData/diagnostics/tests/callableReference/ea81649_errorPropertyLHS.kt");
