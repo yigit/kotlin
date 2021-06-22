@@ -295,6 +295,24 @@ internal tailrec fun FirCallableSymbol<*>.unwrapCallRepresentative(root: FirCall
     return overriddenSymbol.unwrapCallRepresentative(this)
 }
 
+internal fun FirSimpleFunction.processOverriddenFunctionSymbols(
+    containingClass: FirClass,
+    session: FirSession,
+    scopeSession: ScopeSession,
+    processor: (FirNamedFunctionSymbol) -> Unit
+) {
+    val scope = containingClass.unsubstitutedScope(session, scopeSession, withForcedTypeCalculator = true)
+    scope.processFunctionsByName(name) {}
+    scope.processOverriddenFunctionsFromSuperClasses(symbol, containingClass) {
+        if (it.fir.visibility == Visibilities.Private) {
+            return@processOverriddenFunctionsFromSuperClasses ProcessorAction.NEXT
+        }
+        processor(it)
+
+        ProcessorAction.NEXT
+    }
+}
+
 internal fun FirSimpleFunction.generateOverriddenFunctionSymbols(
     containingClass: FirClass,
     session: FirSession,
@@ -303,20 +321,12 @@ internal fun FirSimpleFunction.generateOverriddenFunctionSymbols(
     fakeOverrideGenerator: FakeOverrideGenerator,
 ): List<IrSimpleFunctionSymbol> {
     val superClasses = containingClass.getSuperTypesAsIrClasses(declarationStorage) ?: return emptyList()
-
-    val scope = containingClass.unsubstitutedScope(session, scopeSession, withForcedTypeCalculator = true)
-    scope.processFunctionsByName(name) {}
     val overriddenSet = mutableSetOf<IrSimpleFunctionSymbol>()
-    scope.processOverriddenFunctionsFromSuperClasses(symbol, containingClass) {
-        if (it.fir.visibility == Visibilities.Private) {
-            return@processOverriddenFunctionsFromSuperClasses ProcessorAction.NEXT
-        }
 
+    processOverriddenFunctionSymbols(containingClass, session, scopeSession) {
         for (overridden in fakeOverrideGenerator.getOverriddenSymbolsInSupertypes(it, superClasses)) {
             overriddenSet += overridden
         }
-
-        ProcessorAction.NEXT
     }
 
     return overriddenSet.toList()
@@ -355,6 +365,27 @@ private fun FirClass.getSuperTypesAsIrClasses(
     return irClass.superTypes.mapNotNull { it.classifierOrNull?.owner as? IrClass }.toSet()
 }
 
+internal fun FirProperty.processOverriddenPropertySymbols(
+    containingClass: FirClass,
+    session: FirSession,
+    scopeSession: ScopeSession,
+    processor: (FirPropertySymbol) -> Unit
+): List<IrPropertySymbol> {
+    val scope = containingClass.unsubstitutedScope(session, scopeSession, withForcedTypeCalculator = true)
+    scope.processPropertiesByName(name) {}
+    val overriddenSet = mutableSetOf<IrPropertySymbol>()
+    scope.processOverriddenPropertiesFromSuperClasses(symbol, containingClass) {
+        if (it.fir.visibility == Visibilities.Private) {
+            return@processOverriddenPropertiesFromSuperClasses ProcessorAction.NEXT
+        }
+        processor(it)
+
+        ProcessorAction.NEXT
+    }
+
+    return overriddenSet.toList()
+}
+
 internal fun FirProperty.generateOverriddenPropertySymbols(
     containingClass: FirClass,
     session: FirSession,
@@ -363,20 +394,12 @@ internal fun FirProperty.generateOverriddenPropertySymbols(
     fakeOverrideGenerator: FakeOverrideGenerator,
 ): List<IrPropertySymbol> {
     val superClasses = containingClass.getSuperTypesAsIrClasses(declarationStorage) ?: return emptyList()
-
-    val scope = containingClass.unsubstitutedScope(session, scopeSession, withForcedTypeCalculator = true)
-    scope.processPropertiesByName(name) {}
     val overriddenSet = mutableSetOf<IrPropertySymbol>()
-    scope.processOverriddenPropertiesFromSuperClasses(symbol, containingClass) {
-        if (it.fir.visibility == Visibilities.Private) {
-            return@processOverriddenPropertiesFromSuperClasses ProcessorAction.NEXT
-        }
 
+    processOverriddenPropertySymbols(containingClass, session, scopeSession) {
         for (overridden in fakeOverrideGenerator.getOverriddenSymbolsInSupertypes(it, superClasses)) {
             overriddenSet += overridden
         }
-
-        ProcessorAction.NEXT
     }
 
     return overriddenSet.toList()
