@@ -18,6 +18,7 @@
 #define RUNTIME_ASSERT_H
 
 #include "Common.h"
+#include "CompilerConstants.hpp"
 
 // To avoid cluttering optimized code with asserts, they could be turned off.
 #define KONAN_ENABLE_ASSERT 1
@@ -47,16 +48,14 @@ inline RUNTIME_NORETURN void TODOImpl(const char* location, const char* message)
 
 } // namespace internal
 
-// During codegeneration we set this constant to 1 or 0 to allow bitcode optimizer
-// to get rid of code behind condition.
-extern "C" const int KonanNeedDebugInfo;
-
 #if KONAN_ENABLE_ASSERT
 // Use RuntimeAssert() in internal state checks, which could be ignored in production.
 #define RuntimeAssert(condition, format, ...) \
     do { \
-        if (KonanNeedDebugInfo && (!(condition))) { \
-            RuntimeAssertFailed(CURRENT_SOURCE_LOCATION, format, ##__VA_ARGS__); \
+        if (::kotlin::compiler::shouldContainDebugInfo()) { \
+            if (!(condition)) { \
+                RuntimeAssertFailed(CURRENT_SOURCE_LOCATION, format, ##__VA_ARGS__); \
+            } \
         } \
     } while (false)
 #else
@@ -67,7 +66,7 @@ extern "C" const int KonanNeedDebugInfo;
 
 // Use RuntimeCheck() in runtime checks that could fail due to external condition and shall lead
 // to program termination. Never compiled out.
-// TODO: Consider using `CURRENT_SOURCE_LOCATION` when `KonanNeedDebugInfo` is `true`.
+// TODO: Consider using `CURRENT_SOURCE_LOCATION` when `kotlin::compiler::shouldContainDebugInfo()` is `true`.
 #define RuntimeCheck(condition, format, ...) \
     do { \
         if (!(condition)) { \
@@ -81,7 +80,7 @@ extern "C" const int KonanNeedDebugInfo;
     } while (false)
 
 // Use RuntimeFail() to unconditionally fail, signifying compiler/runtime bug.
-// TODO: Consider using `CURRENT_SOURCE_LOCATION` when `KonanNeedDebugInfo` is `true`.
+// TODO: Consider using `CURRENT_SOURCE_LOCATION` when `kotlin::compiler::shouldContainDebugInfo()` is `true`.
 #define RuntimeFail(format, ...) \
     do { \
         RuntimeAssertFailed(nullptr, format, ##__VA_ARGS__); \
