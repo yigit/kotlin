@@ -272,6 +272,7 @@ class IrBuiltInsOverDescriptors(
     override val mapClass = builtIns.map.toIrSymbol()
     override val mapEntryClass = builtIns.mapEntry.toIrSymbol()
     override val iterableClass = builtIns.iterable.toIrSymbol()
+    override val iteratorClass = builtIns.iterator.toIrSymbol()
     override val listIteratorClass = builtIns.listIterator.toIrSymbol()
     override val mutableCollectionClass = builtIns.mutableCollection.toIrSymbol()
     override val mutableSetClass = builtIns.mutableSet.toIrSymbol()

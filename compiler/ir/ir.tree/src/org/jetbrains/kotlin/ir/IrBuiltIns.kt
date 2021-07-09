@@ -65,6 +65,7 @@ abstract class IrBuiltIns {
     abstract val mapClass: IrClassSymbol
     abstract val mapEntryClass: IrClassSymbol
     abstract val iterableClass: IrClassSymbol
+    abstract val iteratorClass: IrClassSymbol
     abstract val listIteratorClass: IrClassSymbol
     abstract val mutableCollectionClass: IrClassSymbol
     abstract val mutableSetClass: IrClassSymbol
