@@ -59,7 +59,7 @@ class IrBuiltInsOverFir(
 
     private val kotlinCollectionsPackage = StandardNames.COLLECTIONS_PACKAGE_FQ_NAME
 
-    private val internalIrPackage = createPackage(KOTLIN_INTERNAL_IR_FQN)
+    override val operatorsPackageFragment = createPackage(KOTLIN_INTERNAL_IR_FQN)
     private val kotlinIrPackage = createPackage(kotlinPackage)
 
     override val booleanNotSymbol: IrSimpleFunctionSymbol by lazy {
@@ -358,7 +358,7 @@ class IrBuiltInsOverFir(
     override lateinit var greaterFunByOperandType: Map<IrClassifierSymbol, IrSimpleFunctionSymbol> private set
 
     init {
-        with(internalIrPackage) {
+        with(this.operatorsPackageFragment) {
 
             fun addBuiltinOperatorSymbol(
                 name: String,
@@ -688,7 +688,7 @@ class IrBuiltInsOverFir(
             ?: referenceClassByFqname(lhsClassFqName)?.owner
     }
 
-    private fun createPackage(fqName: FqName): IrPackageFragment =
+    private fun createPackage(fqName: FqName): IrExternalPackageFragment =
         IrExternalPackageFragmentImpl.createEmptyExternalPackageFragment(moduleDescriptor, fqName)
 
     private fun IrDeclarationParent.createClass(
