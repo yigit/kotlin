@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.ir.visitors.acceptVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import java.util.*
+import kotlin.math.exp
 
 inline fun <reified T : IrElement> T.deepCopyWithSymbols(
     initialParent: IrDeclarationParent? = null,
@@ -405,6 +406,35 @@ open class DeepCopyIrTreeWithSymbols(
 
     override fun <T> visitConst(expression: IrConst<T>): IrConst<T> =
         expression.shallowCopy().copyAttributes(expression)
+
+    override fun visitStaticallyInitializedObject(expression: IrStaticallyInitializedObject): IrExpression =
+        IrStaticallyInitializedObjectImpl(
+            expression.startOffset, expression.endOffset,
+            expression.type.remapType(),
+            expression.fields.mapValues { (_, value) -> value.transform() },
+            expression.isBoxed
+        ).copyAttributes(expression)
+
+    override fun visitStaticallyInitializedConstant(expression: IrStaticallyInitializedConstant): IrExpression =
+        IrStaticallyInitializedConstantImpl(
+            expression.startOffset, expression.endOffset,
+            expression.value.transform()
+        ).copyAttributes(expression)
+
+    override fun visitStaticallyInitializedArray(expression: IrStaticallyInitializedArray): IrExpression =
+        IrStaticallyInitializedArrayImpl(
+            expression.startOffset, expression.endOffset,
+            expression.type.remapType(),
+            expression.values.transform(),
+            expression.isBoxed
+        ).copyAttributes(expression)
+
+    override fun visitStaticallyInitializedIntrinsic(expression: IrStaticallyInitializedIntrinsic): IrExpression =
+        IrStaticallyInitializedIntrinsicImpl(
+            expression.startOffset, expression.endOffset,
+            expression.expression.transform(),
+            expression.isBoxed
+        ).copyAttributes(expression)
 
     override fun visitVararg(expression: IrVararg): IrVararg =
         IrVarargImpl(
