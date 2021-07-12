@@ -12,10 +12,7 @@ using namespace kotlin;
 
 namespace {
 
-// TODO: Enable stacktraces for asserts when stacktrace printing is more mature.
-inline constexpr bool kEnableStacktraces = false;
-
-void PrintAssert(const char* location, const char* format, std::va_list args) noexcept {
+void PrintAssert(const char* location, bool allowStacktrace, const char* format, std::va_list args) noexcept {
     char buf[1024];
     int written = -1;
 
@@ -33,24 +30,24 @@ void PrintAssert(const char* location, const char* format, std::va_list args) no
 
     konan::consoleErrorUtf8(buf, konan::strnlen(buf, sizeof(buf)));
     konan::consoleErrorf("\n");
-    if constexpr (kEnableStacktraces) {
-        kotlin::PrintStackTraceStderr();
+    if (allowStacktrace) {
+        PrintStackTraceStderr();
     }
 }
 
 } // namespace
 
-void internal::RuntimeAssertFailedLog(const char* location, const char* format, ...) {
+void internal::RuntimeAssertFailedLog(const char* location, bool allowStacktrace, const char* format, ...) {
     std::va_list args;
     va_start(args, format);
-    PrintAssert(location, format, args);
+    PrintAssert(location, allowStacktrace, format, args);
     va_end(args);
 }
 
-RUNTIME_NORETURN void internal::RuntimeAssertFailedPanic(const char* location, const char* format, ...) {
+RUNTIME_NORETURN void internal::RuntimeAssertFailedPanic(const char* location, bool allowStacktrace, const char* format, ...) {
     std::va_list args;
     va_start(args, format);
-    PrintAssert(location, format, args);
+    PrintAssert(location, allowStacktrace, format, args);
     va_end(args);
     konan::abort();
 }

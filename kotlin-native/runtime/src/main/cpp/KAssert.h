@@ -28,16 +28,16 @@
 namespace kotlin {
 namespace internal {
 
-void RuntimeAssertFailedLog(const char* location, const char* format, ...) __attribute__((format(printf, 2, 3)));
-RUNTIME_NORETURN void RuntimeAssertFailedPanic(const char* location, const char* format, ...) __attribute__((format(printf, 2, 3)));
+void RuntimeAssertFailedLog(const char* location, bool allowStacktrace, const char* format, ...) __attribute__((format(printf, 3, 4)));
+RUNTIME_NORETURN void RuntimeAssertFailedPanic(const char* location, bool allowStacktrace, const char* format, ...) __attribute__((format(printf, 3, 4)));
 
 inline RUNTIME_NORETURN void TODOImpl(const char* location) {
-    RuntimeAssertFailedPanic(location, "Unimplemented");
+    RuntimeAssertFailedPanic(location, true, "Unimplemented");
 }
 
 // TODO: Support format string when `RuntimeAssertFailed` supports it.
 inline RUNTIME_NORETURN void TODOImpl(const char* location, const char* message) {
-    RuntimeAssertFailedPanic(location, "%s", message);
+    RuntimeAssertFailedPanic(location, true, "%s", message);
 }
 
 } // namespace internal
@@ -50,12 +50,12 @@ inline RUNTIME_NORETURN void TODOImpl(const char* location, const char* message)
             case ::kotlin::compiler::RuntimeAssertsMode::kIgnore: break; \
             case ::kotlin::compiler::RuntimeAssertsMode::kLog: \
                 if (!(condition)) { \
-                    ::kotlin::internal::RuntimeAssertFailedLog(CURRENT_SOURCE_LOCATION, format, ##__VA_ARGS__); \
+                    ::kotlin::internal::RuntimeAssertFailedLog(CURRENT_SOURCE_LOCATION, true, format, ##__VA_ARGS__); \
                 } \
                 break; \
             case ::kotlin::compiler::RuntimeAssertsMode::kPanic: \
                 if (!(condition)) { \
-                    ::kotlin::internal::RuntimeAssertFailedPanic(CURRENT_SOURCE_LOCATION, format, ##__VA_ARGS__); \
+                    ::kotlin::internal::RuntimeAssertFailedPanic(CURRENT_SOURCE_LOCATION, true, format, ##__VA_ARGS__); \
                 } \
                 break; \
         } \
@@ -67,7 +67,7 @@ inline RUNTIME_NORETURN void TODOImpl(const char* location, const char* message)
 #define RuntimeCheck(condition, format, ...) \
     do { \
         if (!(condition)) { \
-            ::kotlin::internal::RuntimeAssertFailedPanic(nullptr, format, ##__VA_ARGS__); \
+            ::kotlin::internal::RuntimeAssertFailedPanic(nullptr, false, format, ##__VA_ARGS__); \
         } \
     } while (false)
 
@@ -80,7 +80,7 @@ inline RUNTIME_NORETURN void TODOImpl(const char* location, const char* message)
 // TODO: Consider using `CURRENT_SOURCE_LOCATION` when `kotlin::compiler::runtimeAssertsMode()` is not `kIgnore`.
 #define RuntimeFail(format, ...) \
     do { \
-        ::kotlin::internal::RuntimeAssertFailedPanic(nullptr, format, ##__VA_ARGS__); \
+        ::kotlin::internal::RuntimeAssertFailedPanic(nullptr, false, format, ##__VA_ARGS__); \
     } while (false)
 
 #endif // RUNTIME_ASSERT_H
