@@ -891,6 +891,8 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
                                         return evaluateSuspendableExpression  (value)
             is IrSuspensionPoint     -> return evaluateSuspensionPoint        (value)
             is IrClassReference ->      return evaluateClassReference         (value)
+            is IrStaticallyInitializedValue ->
+                                        return evaluateStaticInitialization   (value).llvm
             else                     -> {
                 TODO(ir2string(value))
             }
@@ -1706,6 +1708,58 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
             IrConstKind.Double -> return Float64(value.value as Double)
         }
         TODO(ir2string(value))
+    }
+
+    //-------------------------------------------------------------------------//
+    private fun evaluateStaticInitialization(value: IrStaticallyInitializedValue): ConstValue {
+        return when (value) {
+            is IrStaticallyInitializedConstant -> {
+                if (value.isBoxed) {
+                    require(value.value.kind != IrConstKind.String && value.value.kind != IrConstKind.Null)
+                    context.llvm.staticData.createConstKotlinObject(
+                            value.type.getClass()!!,
+                            evaluateConst(value.value)
+                    )
+                } else {
+                    evaluateConst(value.value)
+                }
+            }
+            is IrStaticallyInitializedArray -> {
+                if (value.isBoxed) throw IllegalStateException("Statically initialized array can't be boxed")
+                val clazz = value.type.getClass()!!
+                if (clazz.symbol != context.ir.symbols.array && clazz.symbol !in context.ir.symbols.primitiveTypesToPrimitiveArrays.values)
+                    throw IllegalStateException("Statically initialized array should have array type")
+                context.llvm.staticData.createConstKotlinArray(
+                        value.type.getClass()!!,
+                        value.values.map { evaluateStaticInitialization(it) }
+                )
+            }
+            is IrStaticallyInitializedObject -> {
+                val clazz = value.type.getClass()!!
+                if (!value.isBoxed && clazz.isInline) {
+                    evaluateStaticInitialization(value.fields.values.single())
+                } else {
+                    context.llvm.staticData.createConstKotlinObject(
+                            clazz,
+                            *context.getLayoutBuilder(clazz).fields.map {
+                                evaluateStaticInitialization(value.fields[it.symbol]!!)
+                            }.also { require(it.size == value.fields.size) }.toTypedArray()
+                    )
+                }
+            }
+            is IrStaticallyInitializedIntrinsic -> {
+                val expression = value.expression
+                when ((expression as? IrCall)?.symbol) {
+                    context.ir.symbols.getClassTypeInfo -> {
+                        with(codegen) {
+                            expression.getTypeArgument(0)!!.getClass()!!.typeInfoPtr
+                        }
+                    }
+                    else -> TODO("Statically initialized intrinsic ${value.dump()} is not implemented")
+                }
+            }
+            else -> TODO("Unimplemented IrStaticallyInitializedValue subclass ${value::class.qualifiedName}")
+        }
     }
 
     //-------------------------------------------------------------------------//
