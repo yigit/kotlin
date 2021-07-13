@@ -468,27 +468,37 @@ class IrBuiltInsOverDescriptors(
         }
     }
 
-    override val toUIntByExtensionReceiver: Map<IrClassifierSymbol, IrSimpleFunctionSymbol> =
-        builtInsPackage("kotlin").getContributedFunctions(
-            Name.identifier("toUInt"),
-            NoLookupLocation.FROM_BACKEND
-        ).filter { it.containingDeclaration !is BuiltInsPackageFragment && it.extensionReceiverParameter != null }
-            .map {
-                val klass = symbolTable.referenceClassifier(it.extensionReceiverParameter!!.type.constructor.declarationDescriptor!!)
-                val function = symbolTable.referenceSimpleFunction(it)
-                klass to function
-            }.toMap()
+    private fun <T: Any> getFunctionsByKey(
+        name: Name,
+        vararg packageNameSegments: String,
+        makeKey: (SimpleFunctionDescriptor) -> T?
+    ): Map<T, IrSimpleFunctionSymbol> {
+        val result = mutableMapOf<T, IrSimpleFunctionSymbol>()
+        for (d in builtInsPackage(*packageNameSegments).getContributedFunctions(name, NoLookupLocation.FROM_BACKEND)) {
+            makeKey(d)?.let { key ->
+                result[key] = symbolTable.referenceSimpleFunction(d)
+            }
+        }
+        return result
+    }
 
-    override val toULongByExtensionReceiver: Map<IrClassifierSymbol, IrSimpleFunctionSymbol> =
-        builtInsPackage("kotlin").getContributedFunctions(
-            Name.identifier("toULong"),
-            NoLookupLocation.FROM_BACKEND
-        ).filter { it.containingDeclaration !is BuiltInsPackageFragment && it.extensionReceiverParameter != null }
-            .map {
-                val klass = symbolTable.referenceClassifier(it.extensionReceiverParameter!!.type.constructor.declarationDescriptor!!)
-                val function = symbolTable.referenceSimpleFunction(it)
-                klass to function
-            }.toMap()
+    override fun getNonBuiltInFunctionsByExtensionReceiver(
+        name: Name, vararg packageNameSegments: String
+    ): Map<IrClassifierSymbol, IrSimpleFunctionSymbol> =
+        getFunctionsByKey(name, *packageNameSegments) {
+            if (it.containingDeclaration !is BuiltInsPackageFragment && it.extensionReceiverParameter != null) {
+                symbolTable.referenceClassifier(it.extensionReceiverParameter!!.type.constructor.declarationDescriptor!!)
+            } else null
+        }
+
+    override fun getNonBuiltinFunctionsByReturnType(
+        name: Name, vararg packageNameSegments: String
+    ): Map<IrClassifierSymbol, IrSimpleFunctionSymbol> =
+        getFunctionsByKey(Name.identifier("getProgressionLastElement"), *packageNameSegments) { d ->
+            if (d.containingDeclaration !is BuiltInsPackageFragment) {
+                d.returnType?.constructor?.declarationDescriptor?.let { symbolTable.referenceClassifier(it) }
+            } else null
+        }
 
     override val extensionToString: IrSimpleFunctionSymbol = findFunctions(Name.identifier("toString"), "kotlin").first {
         val descriptor = it.descriptor
@@ -522,17 +532,6 @@ class IrBuiltInsOverDescriptors(
     override fun kFunctionN(arity: Int): IrClass = functionFactory.kFunctionN(arity)
     override fun suspendFunctionN(arity: Int): IrClass = functionFactory.suspendFunctionN(arity)
     override fun kSuspendFunctionN(arity: Int): IrClass = functionFactory.kSuspendFunctionN(arity)
-
-    override val getProgressionLastElementByReturnType: Map<IrClassifierSymbol?, IrSimpleFunctionSymbol> =
-        builtInsPackage("kotlin", "internal")
-            .getContributedFunctions(Name.identifier("getProgressionLastElement"), NoLookupLocation.FROM_BACKEND)
-            .filter { it.containingDeclaration !is BuiltInsPackageFragment }
-            .map { d ->
-                val klass = d.returnType?.constructor?.declarationDescriptor?.let { symbolTable.referenceClassifier(it) }
-                val function = symbolTable.referenceSimpleFunction(d)
-                klass to function
-            }
-            .toMap()
 }
 
 private inline fun MemberScope.findFirstFunction(name: String, predicate: (CallableMemberDescriptor) -> Boolean) =
