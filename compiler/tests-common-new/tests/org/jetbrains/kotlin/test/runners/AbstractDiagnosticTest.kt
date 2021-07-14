@@ -112,5 +112,13 @@ abstract class AbstractDiagnosticTest : AbstractKotlinCompilerTest() {
                 +WITH_REFLECT
             }
         }
+
+        forTestsMatching("compiler/testData/diagnostics/tests/testsWithJava17/*") {
+            defaultDirectives {
+                JDK_KIND with TestJdkKind.FULL_JDK_17
+                +WITH_STDLIB
+                +WITH_REFLECT
+            }
+        }
     }
 }
