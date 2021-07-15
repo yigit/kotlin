@@ -30,6 +30,10 @@
 #include "Utils.hpp"
 #include "ObjCExceptions.h"
 
+// Defined in RuntimeUtils.kt
+extern "C" void Kotlin_runUnhandledExceptionHook(KRef exception);
+extern "C" void ReportUnhandledException(KRef exception);
+
 void ThrowException(KRef exception) {
   RuntimeAssert(exception != nullptr && IsInstance(exception, theThrowableTypeInfo),
                 "Throwing something non-throwable");
@@ -64,26 +68,35 @@ class {
     }
 } concurrentTerminateWrapper;
 
-//! Process exception hook (if any) or just printStackTrace + write crash log
-void processUnhandledKotlinException(KRef throwable) {
-  // Use the reentrant switch because both states are possible here:
-  //  - runnable, if the exception occured in a pure Kotlin thread (except initialization of globals).
-  //  - native, if the throwing code was called from ObjC/Swift or if the exception occured during initialization of globals.
-  kotlin::ThreadStateGuard guard(kotlin::ThreadState::kRunnable, /* reentrant = */ true);
-  OnUnhandledException(throwable);
+void RUNTIME_NORETURN terminateWithUnhandledException(KRef exception) {
 #if KONAN_REPORT_BACKTRACE_TO_IOS_CRASH_LOG
-  ReportBacktraceToIosCrashLog(throwable);
+    if (exception != nullptr) {
+        ReportBacktraceToIosCrashLog(exception);
+    }
+#endif
+    konan::abort();
+}
+
+void RUNTIME_NORETURN processUnhandledExceptionAndTerminate(KRef exception) noexcept {
+    // Use the reentrant switch because both states are possible here:
+    //  - runnable, if the exception occured in a pure Kotlin thread (except initialization of globals).
+    //  - native, if the throwing code was called from ObjC/Swift or if the exception occured during initialization of globals.
+    kotlin::ThreadStateGuard guard(kotlin::ThreadState::kRunnable, /* reentrant = */ true);
+#if KONAN_NO_EXCEPTIONS
+    ReportUnhandledException(exception);
+    terminateWithUnhandledException(exception);
+#else
+    try {
+        Kotlin_runUnhandledExceptionHook(exception);
+        konan::abort();
+    } catch (ExceptionObjHolder& e) {
+        ReportUnhandledException(e.GetExceptionObject());
+        terminateWithUnhandledException(e.GetExceptionObject());
+    }
 #endif
 }
 
 } // namespace
-
-RUNTIME_NORETURN void TerminateWithUnhandledException(KRef throwable) {
-  concurrentTerminateWrapper([=]() {
-    processUnhandledKotlinException(throwable);
-    konan::abort();
-  });
-}
 
 ALWAYS_INLINE RUNTIME_NOTHROW OBJ_GETTER(Kotlin_getExceptionObject, void* holder) {
 #if !KONAN_NO_EXCEPTIONS
@@ -107,8 +120,7 @@ class TerminateHandler : private kotlin::Pinned {
         try {
           std::rethrow_exception(currentException);
         } catch (ExceptionObjHolder& e) {
-          processUnhandledKotlinException(e.GetExceptionObject());
-          konan::abort();
+          processUnhandledExceptionAndTerminate(e.GetExceptionObject());
         } catch (...) {
           // Not a Kotlin exception - call default handler
           instance().queuedHandler_();
@@ -154,3 +166,11 @@ void SetKonanTerminateHandler() {
 }
 
 #endif // !KONAN_NO_EXCEPTIONS
+
+extern "C" void RUNTIME_NORETURN Kotlin_terminateWithUnhandledException(KRef exception) {
+    concurrentTerminateWrapper([exception]() { terminateWithUnhandledException(exception); });
+}
+
+void RUNTIME_NORETURN kotlin::ProcessUnhandledExceptionAndTerminate(KRef exception) noexcept {
+    concurrentTerminateWrapper([exception]() { processUnhandledExceptionAndTerminate(exception); });
+}

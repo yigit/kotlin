@@ -129,7 +129,9 @@ internal class KonanSymbols(
 
     val objCMethodImp = symbolTable.referenceClass(context.interopBuiltIns.objCMethodImp)
 
-    val onUnhandledException = internalFunction("OnUnhandledException")
+    val processUnhandledException = symbolTable.referenceSimpleFunction(
+            builtInsPackage("kotlin", "native").getContributedFunctions(
+                    Name.identifier("processUnhandledException"), NoLookupLocation.FROM_BACKEND).single())
 
     val interopNativePointedGetRawPointer =
             symbolTable.referenceSimpleFunction(context.interopBuiltIns.nativePointedGetRawPointer)

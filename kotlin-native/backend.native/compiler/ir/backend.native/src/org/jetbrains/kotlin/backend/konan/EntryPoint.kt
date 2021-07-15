@@ -79,9 +79,10 @@ internal fun makeEntryPoint(context: Context): IrFunction {
             }
             catches += irCatch(context.irBuiltIns.throwableType).apply {
                 result = irBlock {
-                    +irCall(context.ir.symbols.onUnhandledException).apply {
+                    +irCall(context.ir.symbols.processUnhandledException).apply {
                         putValueArgument(0, irGet(catchParameter))
                     }
+                    // TODO: This is called if exception hook has completed successfully. Should it be 0 or abort instead?
                     +irReturn(irInt(1))
                 }
             }

@@ -7,6 +7,8 @@ package kotlin.native
 import kotlin.native.concurrent.InvalidMutabilityException
 import kotlin.native.internal.GCUnsafeCall
 import kotlin.native.internal.UnhandledExceptionHookHolder
+import kotlin.native.internal.runUnhandledExceptionHook
+import kotlin.native.internal.ReportUnhandledException
 
 /**
  * Initializes Kotlin runtime for the current thread, if not inited already.
@@ -56,6 +58,25 @@ public fun setUnhandledExceptionHook(hook: ReportUnhandledExceptionHook): Report
 public fun getUnhandledExceptionHook(): ReportUnhandledExceptionHook? {
     return UnhandledExceptionHookHolder.hook.value
 }
+
+/**
+ * Perform the default processing of unhandled exception.
+ */
+public fun processUnhandledException(throwable: Throwable) {
+    try {
+        runUnhandledExceptionHook(throwable)
+    } catch (e: Throwable) {
+        ReportUnhandledException(e)
+        terminateWithUnhandledException(e)
+    }
+}
+
+/*
+ * Terminate the program with unhandled exception. Does not run unhandled exception hook from
+ * [setUnhandledExceptionHook].
+ */
+@GCUnsafeCall("Kotlin_terminateWithUnhandledException")
+public external fun terminateWithUnhandledException(throwable: Throwable): Nothing
 
 /**
  * Compute stable wrt potential object relocations by the memory manager identity hash code.

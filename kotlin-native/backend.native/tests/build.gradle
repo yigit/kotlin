@@ -2445,7 +2445,7 @@ standaloneTest("kt-37572") {
 standaloneTest("custom_hook") {
     enabled = (project.testTarget != 'wasm32') // Uses exceptions.
     goldValue = "value 42: Error\n"
-    expectedExitStatus = 1
+    expectedExitStatusChecker = { it != 0 }
     source = "runtime/exceptions/custom_hook.kt"
 }
 
@@ -2476,6 +2476,30 @@ standaloneTest("custom_hook_throws") {
     source = "runtime/exceptions/custom_hook_throws.kt"
 }
 
+standaloneTest("custom_hook_unhandled_exception") {
+    enabled = (project.testTarget != 'wasm32') // Uses exceptions.
+    goldValue = ""
+    source = "runtime/exceptions/custom_hook_unhandled_exception.kt"
+}
+
+standaloneTest("custom_hook_terminate") {
+    enabled = (project.testTarget != 'wasm32') // Uses exceptions.
+    outputChecker = {
+        it.contains("Hook called")
+    }
+    expectedExitStatusChecker = { it != 0 }
+    source = "runtime/exceptions/custom_hook_terminate.kt"
+}
+
+standaloneTest("custom_hook_terminate_unhandled_exception") {
+    enabled = (project.testTarget != 'wasm32') // Uses exceptions.
+    outputChecker = {
+        it.contains("Hook called")
+    }
+    expectedExitStatusChecker = { it != 0 }
+    source = "runtime/exceptions/custom_hook_terminate_unhandled_exception.kt"
+}
+
 standaloneTest("exception_in_global_init") {
     enabled = (project.testTarget != 'wasm32') // Uses exceptions.
     source = "runtime/exceptions/exception_in_global_init.kt"
@@ -2491,6 +2515,21 @@ task rethrow_exception(type: KonanLocalTest) {
 task throw_from_catch(type: KonanLocalTest) {
     enabled = (project.testTarget != 'wasm32') // Uses exceptions.
     source = "runtime/exceptions/throw_from_catch.kt"
+}
+
+standaloneTest("terminate") {
+    enabled = (project.testTarget != 'wasm32') // Uses exceptions.
+    expectedExitStatusChecker = { it != 0 }
+    source = "runtime/exceptions/terminate.kt"
+}
+
+standaloneTest("unhandled_exception") {
+    enabled = (project.testTarget != 'wasm32') // Uses exceptions.
+    outputChecker = {
+        it.contains("Uncaught Kotlin exception: kotlin.Error: some error")
+    }
+    expectedExitStatusChecker = { it != 0 }
+    source = "runtime/exceptions/unhandled_exception.kt"
 }
 
 standaloneTest("runtime_math_exceptions") {
@@ -2712,7 +2751,7 @@ task runtime_basic_standard(type: KonanLocalTest) {
 }
 
 standaloneTest("runtime_basic_assert_failed") {
-    expectedExitStatus = 1
+    expectedExitStatusChecker = { it != 0 }
     source = "runtime/basic/assert_failed.kt"
 }
 

@@ -26,11 +26,6 @@ extern "C" {
 // Throws arbitrary exception.
 void ThrowException(KRef exception);
 
-// RuntimeUtils.kt
-void OnUnhandledException(KRef throwable);
-
-RUNTIME_NORETURN void TerminateWithUnhandledException(KRef exception);
-
 void SetKonanTerminateHandler();
 
 RUNTIME_NOTHROW OBJ_GETTER(Kotlin_getExceptionObject, void* holder);
@@ -66,5 +61,11 @@ void PrintThrowable(KRef);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
+namespace kotlin {
+
+void RUNTIME_NORETURN ProcessUnhandledExceptionAndTerminate(KRef exception) noexcept;
+
+} // namespace kotlin
 
 #endif // RUNTIME_NAMES_H

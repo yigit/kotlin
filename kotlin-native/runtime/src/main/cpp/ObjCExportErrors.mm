@@ -40,7 +40,7 @@ extern "C" RUNTIME_NORETURN void Kotlin_ObjCExport_trapOnUndeclaredException(KRe
                  "from Kotlin to Objective-C/Swift as NSError.\n"
                  "It is considered unexpected and unhandled instead. Program will be terminated.");
 
-  TerminateWithUnhandledException(exception);
+  kotlin::ProcessUnhandledExceptionAndTerminate(exception);
 }
 
 static char kotlinExceptionOriginChar;
@@ -67,7 +67,7 @@ extern "C" id Kotlin_ObjCExport_ExceptionAsNSError(KRef exception, const TypeInf
     printlnMessage("Exception doesn't match @Throws-specified class list and thus isn't propagated "
                    "from Kotlin to Objective-C/Swift as NSError.\n"
                    "It is considered unexpected and unhandled instead. Program will be terminated.");
-    TerminateWithUnhandledException(exception);
+    kotlin::ProcessUnhandledExceptionAndTerminate(exception);
   }
 
   return Kotlin_ObjCExport_WrapExceptionToNSError(exception);
