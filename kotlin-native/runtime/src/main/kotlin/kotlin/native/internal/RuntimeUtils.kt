@@ -135,7 +135,7 @@ internal object UnhandledExceptionHookHolder {
 @PublishedApi
 @ExportForCppRuntime
 internal fun OnUnhandledException(throwable: Throwable) {
-    val handler = UnhandledExceptionHookHolder.hook.swap(null)
+    val handler = UnhandledExceptionHookHolder.hook.value
     if (handler == null) {
         ReportUnhandledException(throwable);
         return

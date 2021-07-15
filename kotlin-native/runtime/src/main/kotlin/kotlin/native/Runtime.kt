@@ -41,8 +41,6 @@ public typealias ReportUnhandledExceptionHook = Function1<Throwable, Unit>
  * Hook is invoked whenever there's uncaught exception reaching boundaries of the Kotlin world,
  * i.e. top level main(), or when Objective-C to Kotlin call not marked with @Throws throws an exception.
  * Hook must be a frozen lambda, so that it could be called from any thread/worker.
- * Hook is invoked once, and is cleared afterwards, so that memory leak detection works as expected even
- * with custom exception hooks.
  */
 public fun setUnhandledExceptionHook(hook: ReportUnhandledExceptionHook): ReportUnhandledExceptionHook? {
     try {

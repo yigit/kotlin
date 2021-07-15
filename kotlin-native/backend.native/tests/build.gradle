@@ -2449,6 +2449,20 @@ standaloneTest("custom_hook") {
     source = "runtime/exceptions/custom_hook.kt"
 }
 
+standaloneTest("custom_hook_memory_leak") {
+    enabled = (project.testTarget != 'wasm32') // Uses exceptions.
+    goldValue = "Hook 42\n"
+    expectedExitStatusChecker = { it != 0 }
+    source = "runtime/exceptions/custom_hook_memory_leak.kt"
+}
+
+standaloneTest("custom_hook_no_reset") {
+    enabled = (project.testTarget != 'wasm32') // Uses exceptions.
+    goldValue = "Hook called\n"
+    expectedExitStatusChecker = { it != 0 }
+    source = "runtime/exceptions/custom_hook_no_reset.kt"
+}
+
 standaloneTest("exception_in_global_init") {
     enabled = (project.testTarget != 'wasm32') // Uses exceptions.
     source = "runtime/exceptions/exception_in_global_init.kt"
