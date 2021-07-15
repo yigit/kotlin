@@ -2456,6 +2456,10 @@ standaloneTest("custom_hook_memory_leak") {
     source = "runtime/exceptions/custom_hook_memory_leak.kt"
 }
 
+standaloneTest("custom_hook_get") {
+    source = "runtime/exceptions/custom_hook_get.kt"
+}
+
 standaloneTest("custom_hook_no_reset") {
     enabled = (project.testTarget != 'wasm32') // Uses exceptions.
     goldValue = "Hook called\n"

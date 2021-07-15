@@ -51,6 +51,13 @@ public fun setUnhandledExceptionHook(hook: ReportUnhandledExceptionHook): Report
 }
 
 /**
+ * Retrieve custom unhandled exception hook set by [setUnhandledExceptionHook].
+ */
+public fun getUnhandledExceptionHook(): ReportUnhandledExceptionHook? {
+    return UnhandledExceptionHookHolder.hook.value
+}
+
+/**
  * Compute stable wrt potential object relocations by the memory manager identity hash code.
  * @return 0 for `null` object, identity hash code otherwise.
  */
