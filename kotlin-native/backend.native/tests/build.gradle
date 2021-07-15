@@ -2467,6 +2467,15 @@ standaloneTest("custom_hook_no_reset") {
     source = "runtime/exceptions/custom_hook_no_reset.kt"
 }
 
+standaloneTest("custom_hook_throws") {
+    enabled = (project.testTarget != 'wasm32') // Uses exceptions.
+    outputChecker = {
+        it.contains("Hook called") && it.contains("Uncaught Kotlin exception: kotlin.Error: another error") && !it.contains("some error")
+    }
+    expectedExitStatusChecker = { it != 0 }
+    source = "runtime/exceptions/custom_hook_throws.kt"
+}
+
 standaloneTest("exception_in_global_init") {
     enabled = (project.testTarget != 'wasm32') // Uses exceptions.
     source = "runtime/exceptions/exception_in_global_init.kt"
