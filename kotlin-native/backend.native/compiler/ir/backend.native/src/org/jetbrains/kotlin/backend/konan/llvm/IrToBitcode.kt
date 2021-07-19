@@ -1715,7 +1715,26 @@ internal class CodeGeneratorVisitor(val context: Context, val lifetimes: Map<IrE
     }
 
     //-------------------------------------------------------------------------//
-    private fun evaluateStaticInitialization(value: IrStaticallyInitializedValue): ConstValue {
+
+    private class IrStaticValueCacheKey(val value: IrStaticallyInitializedValue) {
+        override fun equals(other: Any?): Boolean {
+            if (other !is IrStaticValueCacheKey) return false
+            return value.contentEquals(other.value)
+        }
+
+        override fun hashCode(): Int {
+            return value.contentHashCode()
+        }
+    }
+
+    private val staticInitializationCache = mutableMapOf<IrStaticValueCacheKey, ConstValue>()
+
+    private fun evaluateStaticInitialization(value: IrStaticallyInitializedValue): ConstValue =
+            staticInitializationCache.getOrPut(IrStaticValueCacheKey(value)) {
+                evaluateStaticInitializationImpl(value)
+            }
+
+    private fun evaluateStaticInitializationImpl(value: IrStaticallyInitializedValue): ConstValue {
         return when (value) {
             is IrStaticallyInitializedConstant -> {
                 if (value.isBoxed) {
