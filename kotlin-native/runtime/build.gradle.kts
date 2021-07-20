@@ -32,6 +32,7 @@ bitcode {
             "${target}StdAlloc",
             "${target}OptAlloc",
             "${target}Mimalloc",
+            "${target}Libbacktrace",
             "${target}Launcher",
             "${target}Debug",
             "${target}Release",
@@ -62,6 +63,31 @@ bitcode {
 
         onlyIf { targetSupportsMimallocAllocator(target) }
     }
+
+    create("libbacktrace") {
+        val hostTarget = HostManager().targetByName(target)
+        language = CompileToBitcode.Language.C
+        includeFiles = listOf("**/*.c")
+        val useMacho = hostTarget.family.isAppleFamily
+        val useElf = hostTarget.family in listOf(Family.LINUX, Family.ANDROID)
+        val usePE = hostTarget.family == Family.MINGW
+        excludeFiles += listOfNotNull(
+                "**/macho.c".takeIf { !useMacho },
+                "**/elf.c".takeIf { !useElf },
+                "**/pecoff.c".takeIf { !usePE }
+        )
+        srcDirs = files("$srcRoot/c")
+        compilerArgs.addAll(listOfNotNull(
+                "-funwind-tables",
+                "-W", "-Wall", "-Wwrite-strings", "-Wstrict-prototypes", "-Wmissing-prototypes",
+                "-Wold-style-definition", "-Wmissing-format-attribute", "-Wcast-qual", "-O2",
+                "-DBACKTRACE_ELF_SIZE=${hostTarget.architecture.bitness}".takeIf { useElf }
+        ))
+        headersDirs = files("$srcRoot/c/include")
+
+        onlyIf { useMacho || useElf || usePE }
+    }
+
 
     create("launcher") {
         includeRuntime()
