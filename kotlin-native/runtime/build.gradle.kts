@@ -35,7 +35,9 @@ bitcode {
             "${target}Libbacktrace",
             "${target}Launcher",
             "${target}Debug",
-            "${target}Release",
+            "${target}SourceInfoNoop",
+            "${target}SourceInfoCoreSymbolication",
+            "${target}SourceInfoLibbacktrace",
             "${target}Strict",
             "${target}Relaxed",
             "${target}ProfileRuntime",
@@ -104,7 +106,16 @@ bitcode {
         includeRuntime()
     }
 
-    create("release") {
+    create("source_info_core_symbolication", file("src/source_info/core_symbolication")) {
+        includeRuntime()
+
+        onlyIf { HostManager().targetByName(target).family.isAppleFamily }
+    }
+    create("source_info_libbacktrace", file("src/source_info/libbacktrace")) {
+        includeRuntime()
+        headersDirs += files("src/libbacktrace/c/include")
+    }
+    create("source_info_noop", file("src/source_info/noop")) {
         includeRuntime()
     }
 
@@ -169,7 +180,7 @@ targetList.forEach { targetName ->
                 "${targetName}Runtime",
                 "${targetName}LegacyMemoryManager",
                 "${targetName}Strict",
-                "${targetName}Release",
+                "${targetName}SourceInfoNoop",
                 "${targetName}StdAlloc"
             )
     ) {
@@ -184,7 +195,7 @@ targetList.forEach { targetName ->
                 "${targetName}Runtime",
                 "${targetName}LegacyMemoryManager",
                 "${targetName}Strict",
-                "${targetName}Release",
+                "${targetName}SourceInfoNoop",
                 "${targetName}Mimalloc",
                 "${targetName}OptAlloc"
             )
@@ -201,7 +212,7 @@ targetList.forEach { targetName ->
                 "${targetName}ExperimentalMemoryManagerStms",
                 "${targetName}CommonGc",
                 "${targetName}SameThreadMsGc",
-                "${targetName}Release",
+                "${targetName}SourceInfoNoop",
                 "${targetName}Mimalloc",
                 "${targetName}OptAlloc"
             )
@@ -219,7 +230,7 @@ targetList.forEach { targetName ->
                 "${targetName}ExperimentalMemoryManagerStms",
                 "${targetName}CommonGc",
                 "${targetName}SameThreadMsGc",
-                "${targetName}Release",
+                "${targetName}SourceInfoNoop",
                 "${targetName}StdAlloc"
             )
     ) {
@@ -236,7 +247,7 @@ targetList.forEach { targetName ->
                 "${targetName}ExperimentalMemoryManagerNoop",
                 "${targetName}CommonGc",
                 "${targetName}NoopGc",
-                "${targetName}Release",
+                "${targetName}SourceInfoNoop",
                 "${targetName}Mimalloc",
                 "${targetName}OptAlloc"
             )
@@ -254,7 +265,7 @@ targetList.forEach { targetName ->
                 "${targetName}ExperimentalMemoryManagerNoop",
                 "${targetName}CommonGc",
                 "${targetName}NoopGc",
-                "${targetName}Release",
+                "${targetName}SourceInfoNoop",
                 "${targetName}StdAlloc"
             )
     ) {

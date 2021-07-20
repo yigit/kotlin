@@ -16,7 +16,6 @@
 
 #include "SourceInfo.h"
 
-#ifdef KONAN_CORE_SYMBOLICATION
 #include <KAssert.h>
 #include <cstdint>
 #include <dlfcn.h>
@@ -220,11 +219,3 @@ extern "C" int Kotlin_getSourceInfo(void* addr, SourceInfo *result_buffer, int r
   result_buffer[0] = inlinedTo;
   return 1;
 }
-
-#else // KONAN_CORE_SYMBOLICATION
-
-extern "C" int Kotlin_getSourceInfo(void* addr, SourceInfo *result, int result_size) {
-    return 0;
-}
-
-#endif // KONAN_CORE_SYMBOLICATION
