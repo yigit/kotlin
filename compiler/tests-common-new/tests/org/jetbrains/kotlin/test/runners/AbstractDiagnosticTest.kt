@@ -9,7 +9,8 @@ import org.jetbrains.kotlin.config.ExplicitApiMode
 import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
 import org.jetbrains.kotlin.test.TestJdkKind
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
-import org.jetbrains.kotlin.test.directives.DiagnosticsDirectives
+import org.jetbrains.kotlin.test.builders.classicFrontendHandlersStep
+import org.jetbrains.kotlin.test.builders.classicFrontendStep
 import org.jetbrains.kotlin.test.directives.DiagnosticsDirectives.DIAGNOSTICS
 import org.jetbrains.kotlin.test.directives.DiagnosticsDirectives.REPORT_JVM_DIAGNOSTICS_ON_FRONTEND
 import org.jetbrains.kotlin.test.directives.JvmEnvironmentConfigurationDirectives.JDK_KIND
@@ -26,10 +27,10 @@ import org.jetbrains.kotlin.test.frontend.classic.handlers.OldNewInferenceMetaIn
 import org.jetbrains.kotlin.test.model.DependencyKind
 import org.jetbrains.kotlin.test.model.FrontendKinds
 import org.jetbrains.kotlin.test.services.configuration.CommonEnvironmentConfigurator
-import org.jetbrains.kotlin.test.services.sourceProviders.AdditionalDiagnosticsSourceFilesProvider
-import org.jetbrains.kotlin.test.services.sourceProviders.CoroutineHelpersSourceFilesProvider
 import org.jetbrains.kotlin.test.services.configuration.JvmEnvironmentConfigurator
 import org.jetbrains.kotlin.test.services.configuration.ScriptingEnvironmentConfigurator
+import org.jetbrains.kotlin.test.services.sourceProviders.AdditionalDiagnosticsSourceFilesProvider
+import org.jetbrains.kotlin.test.services.sourceProviders.CoroutineHelpersSourceFilesProvider
 
 abstract class AbstractDiagnosticTest : AbstractKotlinCompilerTest() {
     companion object {
@@ -72,11 +73,14 @@ abstract class AbstractDiagnosticTest : AbstractKotlinCompilerTest() {
             ::CoroutineHelpersSourceFilesProvider,
         )
 
-        useFrontendFacades(::ClassicFrontendFacade)
-        useFrontendHandlers(
-            ::DeclarationsDumpHandler,
-            ::ClassicDiagnosticsHandler,
-        )
+        classicFrontendStep()
+
+        classicFrontendHandlersStep {
+            useHandlers(
+                ::DeclarationsDumpHandler,
+                ::ClassicDiagnosticsHandler,
+            )
+        }
 
         useAfterAnalysisCheckers(::FirTestDataConsistencyHandler)
 

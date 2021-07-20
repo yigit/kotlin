@@ -6,9 +6,8 @@
 package org.jetbrains.kotlin.test.builders
 
 import com.intellij.openapi.Disposable
-import org.jetbrains.kotlin.test.Constructor
-import org.jetbrains.kotlin.test.TestConfiguration
-import org.jetbrains.kotlin.test.TestInfrastructureInternals
+import org.jetbrains.kotlin.fir.PrivateForInline
+import org.jetbrains.kotlin.test.*
 import org.jetbrains.kotlin.test.directives.model.DirectivesContainer
 import org.jetbrains.kotlin.test.impl.TestConfigurationImpl
 import org.jetbrains.kotlin.test.model.*
@@ -16,14 +15,16 @@ import org.jetbrains.kotlin.test.services.*
 import kotlin.io.path.Path
 
 @DefaultsDsl
-@OptIn(TestInfrastructureInternals::class)
+@OptIn(TestInfrastructureInternals::class, PrivateForInline::class)
 class TestConfigurationBuilder {
     val defaultsProviderBuilder: DefaultsProviderBuilder = DefaultsProviderBuilder()
     lateinit var assertions: AssertionsService
 
-    private val facades: MutableList<Constructor<AbstractTestFacade<*, *>>> = mutableListOf()
+    @PrivateForInline
+    val steps: MutableList<TestStepBuilder<*>> = mutableListOf()
 
-    private val handlers: MutableList<Constructor<AnalysisHandler<*>>> = mutableListOf()
+    @PrivateForInline
+    val namedSteps: MutableMap<String, TestStepBuilder<*>> = mutableMapOf()
 
     private val sourcePreprocessors: MutableList<Constructor<SourceFilePreprocessor>> = mutableListOf()
     private val additionalMetaInfoProcessors: MutableList<Constructor<AdditionalMetaInfoProcessor>> = mutableListOf()
@@ -48,6 +49,8 @@ class TestConfigurationBuilder {
     private var compilerConfigurationProvider: ((Disposable, List<EnvironmentConfigurator>) -> CompilerConfigurationProvider)? = null
 
     lateinit var testInfo: KotlinTestInfo
+
+    lateinit var startingArtifactFactory: (TestModule) -> ResultingArtifact<*>
 
     inline fun <reified T : TestService> useAdditionalService(noinline serviceConstructor: (TestServices) -> T) {
         useAdditionalService(service(serviceConstructor))
@@ -88,32 +91,47 @@ class TestConfigurationBuilder {
         defaultsProviderBuilder.apply(init)
     }
 
-    fun unregisterAllFacades() {
-        facades.clear()
+    fun <I : ResultingArtifact<I>, O : ResultingArtifact<O>> facadeStep(
+        facade: Constructor<AbstractTestFacade<I, O>>,
+    ): FacadeStepBuilder<I, O> {
+        return FacadeStepBuilder(facade).also {
+            steps += it
+        }
     }
 
-    fun useFrontendFacades(vararg constructor: Constructor<FrontendFacade<*>>) {
-        facades += constructor
+    inline fun <I : ResultingArtifact<I>> handlersStep(
+        artifactKind: TestArtifactKind<I>,
+        init: HandlersStepBuilder<I>.() -> Unit
+    ): HandlersStepBuilder<I> {
+        return HandlersStepBuilder(artifactKind).also {
+            it.init()
+            steps += it
+        }
     }
 
-    fun useBackendFacades(vararg constructor: Constructor<BackendFacade<*, *>>) {
-        facades += constructor
+    inline fun <I : ResultingArtifact<I>> namedHandlersStep(
+        name: String,
+        artifactKind: TestArtifactKind<I>,
+        init: HandlersStepBuilder<I>.() -> Unit
+    ): HandlersStepBuilder<I> {
+        val step = handlersStep(artifactKind, init)
+        val previouslyContainedStep = namedSteps.put(name, step)
+        if (previouslyContainedStep != null) {
+            error { "Step with name \"$name\" already registered" }
+        }
+        return step
     }
 
-    fun useFrontend2BackendConverters(vararg constructor: Constructor<Frontend2BackendConverter<*, *>>) {
-        facades += constructor
-    }
-
-    fun useFrontendHandlers(vararg constructor: Constructor<FrontendOutputHandler<*>>) {
-        handlers += constructor
-    }
-
-    fun useBackendHandlers(vararg constructor: Constructor<BackendInputHandler<*>>) {
-        handlers += constructor
-    }
-
-    fun useArtifactsHandlers(vararg constructor: Constructor<BinaryArtifactHandler<*>>) {
-        handlers += constructor
+    inline fun <I : ResultingArtifact<I>> configureNamedHandlersStep(
+        name: String,
+        artifactKind: TestArtifactKind<I>,
+        init: HandlersStepBuilder<I>.() -> Unit
+    ) {
+        val step = namedSteps[name] ?: error { "Step \"$name\" not found" }
+        require(step is HandlersStepBuilder<*>) { "Step '$name' is not a handlers step"}
+        require(step.artifactKind == artifactKind) { "Step kind: ${step.artifactKind}, passed kind is $artifactKind" }
+        @Suppress("UNCHECKED_CAST")
+        (step as HandlersStepBuilder<I>).apply(init)
     }
 
     fun useSourcePreprocessor(vararg preprocessors: Constructor<SourceFilePreprocessor>, needToPrepend: Boolean = false) {
@@ -122,6 +140,10 @@ class TestConfigurationBuilder {
         } else {
             sourcePreprocessors.addAll(preprocessors)
         }
+    }
+
+    fun unregisterAllSteps() {
+        steps.clear()
     }
 
     fun useDirectives(vararg directives: DirectivesContainer) {
@@ -142,6 +164,11 @@ class TestConfigurationBuilder {
 
     fun useAdditionalSourceProviders(vararg providers: Constructor<AdditionalSourceProvider>) {
         additionalSourceProviders += providers
+    }
+
+    @TestInfrastructureInternals
+    fun resetModuleStructureTransformers() {
+        moduleStructureTransformers.clear()
     }
 
     @TestInfrastructureInternals
@@ -188,8 +215,7 @@ class TestConfigurationBuilder {
             testInfo,
             defaultsProviderBuilder.build(),
             assertions,
-            facades,
-            handlers,
+            steps,
             sourcePreprocessors,
             additionalMetaInfoProcessors,
             environmentConfigurators,
@@ -202,6 +228,7 @@ class TestConfigurationBuilder {
             metaInfoHandlerEnabled,
             directives,
             defaultRegisteredDirectivesBuilder.build(),
+            startingArtifactFactory,
             additionalServices
         )
     }

@@ -9,7 +9,8 @@ import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
 import org.jetbrains.kotlin.test.TestJdkKind
 import org.jetbrains.kotlin.test.bind
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
-import org.jetbrains.kotlin.test.directives.FirDiagnosticsDirectives.COMPARE_WITH_LIGHT_TREE
+import org.jetbrains.kotlin.test.builders.firFrontendStep
+import org.jetbrains.kotlin.test.builders.firHandlersStep
 import org.jetbrains.kotlin.test.directives.FirDiagnosticsDirectives.FIR_DUMP
 import org.jetbrains.kotlin.test.directives.FirDiagnosticsDirectives.USE_LIGHT_TREE
 import org.jetbrains.kotlin.test.directives.FirDiagnosticsDirectives.WITH_EXTENDED_CHECKERS
@@ -64,14 +65,17 @@ fun TestConfigurationBuilder.baseFirDiagnosticTestConfiguration(baseDir: String 
         ::AdditionalDiagnosticsSourceFilesProvider.bind(baseDir),
         ::CoroutineHelpersSourceFilesProvider.bind(baseDir),
     )
-    useFrontendFacades(::FirFrontendFacade)
-    useFrontendHandlers(
-        ::FirDiagnosticsHandler,
-        ::FirDumpHandler,
-        ::FirCfgDumpHandler,
-        ::FirCfgConsistencyHandler,
-        ::FirNoImplicitTypesHandler,
-    )
+
+    firFrontendStep()
+    firHandlersStep {
+        useHandlers(
+            ::FirDiagnosticsHandler,
+            ::FirDumpHandler,
+            ::FirCfgDumpHandler,
+            ::FirCfgConsistencyHandler,
+            ::FirNoImplicitTypesHandler,
+        )
+    }
 
     useMetaInfoProcessors(::PsiLightTreeMetaInfoProcessor)
 

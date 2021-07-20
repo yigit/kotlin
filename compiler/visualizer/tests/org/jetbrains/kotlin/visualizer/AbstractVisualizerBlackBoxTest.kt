@@ -48,11 +48,11 @@ abstract class AbstractVisualizerBlackBoxTest {
             ::CommonEnvironmentConfigurator,
             ::JvmEnvironmentConfigurator,
         )
-
-        useFrontendFacades(
-            ::ClassicFrontendFacade,
-            ::FirFrontendFacade
-        )
+        // TODO
+//        useFrontendFacades(
+//            ::ClassicFrontendFacade,
+//            ::FirFrontendFacade
+//        )
 
         useAdditionalSourceProviders(
             ::AdditionalDiagnosticsSourceFilesProvider,

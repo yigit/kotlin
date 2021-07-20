@@ -101,7 +101,13 @@ class MethodSignatureMapper(private val context: JvmBackendContext) {
         return mangleMemberNameIfRequired(function.name.asString(), function)
     }
 
-    private fun IrType.isJavaLangRecord() = getClass()!!.hasEqualFqName(JAVA_LANG_RECORD_FQ_NAME)
+    private fun IrType.isJavaLangRecord(): Boolean {
+        val clazz = getClass()
+        if (clazz == null) {
+            Unit
+        }
+        return clazz!!.hasEqualFqName(JAVA_LANG_RECORD_FQ_NAME)
+    }
 
     private fun mangleMemberNameIfRequired(name: String, function: IrSimpleFunction): String {
         val newName = JvmCodegenUtil.sanitizeNameIfNeeded(name, context.state.languageVersionSettings)
