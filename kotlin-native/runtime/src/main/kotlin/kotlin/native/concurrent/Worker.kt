@@ -34,12 +34,28 @@ public inline class Worker @PublishedApi internal constructor(val id: Int) {
          * Typically new worker may be needed for computations offload to another core, for IO it may be
          * better to use non-blocking IO combined with more lightweight coroutines.
          *
-         * @param errorReporting controls if an uncaught exceptions in the worker will be printed out
+         * @param errorReporting controls if an uncaught exceptions in the worker will be ignored.
          * @param name defines the optional name of this worker, if none - default naming is used.
          * @return worker object, usable across multiple concurrent contexts.
          */
         public fun start(errorReporting: Boolean = true, name: String? = null): Worker
                 = Worker(startInternal(errorReporting, name))
+
+        /**
+         * Start new scheduling primitive, such as thread, to accept new tasks via `execute` interface.
+         * Typically new worker may be needed for computations offload to another core, for IO it may be
+         * better to use non-blocking IO combined with more lightweight coroutines.
+         *
+         * This is a deprecated version of [start] that will print exceptions escaping from a job.
+         * If you want to keep this behavior, consider using [start] with `errorReporting = true` and
+         * set a global unhandled exception hook ([setUnhandledExceptionHook]) to print exceptions.
+         *
+         * @param name defines the optional name of this worker, if none - default naming is used.
+         * @return worker object, usable across multiple concurrent contexts.
+         */
+        @Deprecated("Use start with setUnhandledExceptionHook instead", level = DeprecationLevel.WARNING)
+        public fun startDeprecated(name: String? = null): Worker
+                = Worker(startInternalDeprecated(name))
 
         /**
          * Return the current worker. Worker context is accessible to any valid Kotlin context,
@@ -99,6 +115,8 @@ public inline class Worker @PublishedApi internal constructor(val id: Int) {
     /**
      * Plan job for further execution in the worker. [operation] parameter must be either frozen, or execution to be
      * planned on the current worker. Otherwise [IllegalStateException] will be thrown.
+     * If the worker was created with `errorReporting` set to true, any exception escaping from [operation] will
+     * be handled by [processUnhandledException].
      *
      * @param afterMicroseconds defines after how many microseconds delay execution shall happen, 0 means immediately,
      * @throws [IllegalArgumentException] on negative values of [afterMicroseconds].

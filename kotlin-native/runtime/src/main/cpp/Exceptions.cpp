@@ -34,6 +34,9 @@
 extern "C" void Kotlin_runUnhandledExceptionHook(KRef exception);
 extern "C" void ReportUnhandledException(KRef exception);
 
+// Defined in Runtime.kt
+extern "C" void Kotlin_processUnhandledException(KRef exception);
+
 void ThrowException(KRef exception) {
   RuntimeAssert(exception != nullptr && IsInstance(exception, theThrowableTypeInfo),
                 "Throwing something non-throwable");
@@ -169,6 +172,10 @@ void SetKonanTerminateHandler() {
 
 extern "C" void RUNTIME_NORETURN Kotlin_terminateWithUnhandledException(KRef exception) {
     concurrentTerminateWrapper([exception]() { terminateWithUnhandledException(exception); });
+}
+
+void kotlin::ProcessUnhandledException(KRef exception) noexcept {
+    Kotlin_processUnhandledException(exception);
 }
 
 void RUNTIME_NORETURN kotlin::ProcessUnhandledExceptionAndTerminate(KRef exception) noexcept {

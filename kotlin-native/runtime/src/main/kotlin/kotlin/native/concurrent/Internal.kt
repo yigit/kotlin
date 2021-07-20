@@ -40,6 +40,9 @@ internal fun executeImpl(worker: Worker, mode: TransferMode, producer: () -> Any
 @GCUnsafeCall("Kotlin_Worker_startInternal")
 external internal fun startInternal(errorReporting: Boolean, name: String?): Int
 
+@GCUnsafeCall("Kotlin_Worker_startInternalDeprecated")
+external internal fun startInternalDeprecated(name: String?): Int
+
 @GCUnsafeCall("Kotlin_Worker_currentInternal")
 external internal fun currentInternal(): Int
 

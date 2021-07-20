@@ -994,6 +994,53 @@ task worker_exception_messages(type: KonanLocalTest) {
     source = "runtime/workers/worker_exception_messages.kt"
 }
 
+task worker_exceptions(type: KonanLocalTest) {
+    enabled = (project.testTarget != 'wasm32') // Workers need pthreads.
+    source = "runtime/workers/worker_exceptions.kt"
+}
+
+task worker_exceptions_legacy(type: KonanLocalTest) {
+    enabled = (project.testTarget != 'wasm32') // Workers need pthreads.
+    outputChecker = {
+        it.contains("testExecuteAfterStartLegacy error") && it.contains("testExecuteStartLegacy error")
+    }
+    source = "runtime/workers/worker_exceptions_legacy.kt"
+}
+
+standaloneTest("worker_exceptions_terminate") {
+    enabled = (project.testTarget != 'wasm32') // Workers need pthreads.
+    expectedExitStatusChecker = { it != 0 }
+    outputChecker = {
+        it.contains("some error") && !it.contains("Will not happen")
+    }
+    source = "runtime/workers/worker_exceptions_terminate.kt"
+}
+
+standaloneTest("worker_exceptions_terminate_hook") {
+    enabled = (project.testTarget != 'wasm32') // Workers need pthreads.
+    outputChecker = {
+        it.contains("hook called") && !it.contains("some error") && it.contains("Will happen")
+    }
+    source = "runtime/workers/worker_exceptions_terminate_hook.kt"
+}
+
+standaloneTest("worker_exceptions_terminate_current") {
+    enabled = (project.testTarget != 'wasm32') // Workers need pthreads.
+    expectedExitStatusChecker = { it != 0 }
+    outputChecker = {
+        it.contains("some error") && !it.contains("Will not happen")
+    }
+    source = "runtime/workers/worker_exceptions_terminate_current.kt"
+}
+
+standaloneTest("worker_exceptions_terminate_hook_current") {
+    enabled = (project.testTarget != 'wasm32') // Workers need pthreads.
+    outputChecker = {
+        it.contains("hook called") && !it.contains("some error") && it.contains("Will happen")
+    }
+    source = "runtime/workers/worker_exceptions_terminate_hook_current.kt"
+}
+
 standaloneTest("worker_threadlocal_no_leak") {
     disabled = (project.testTarget == 'wasm32') // Needs pthreads.
     source = "runtime/workers/worker_threadlocal_no_leak.kt"

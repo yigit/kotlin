@@ -82,6 +82,12 @@ enum class WorkerKind {
   kOther,   // Any other kind of workers.
 };
 
+enum class WorkerExceptionHandling {
+    kDefault, // Perform the default processing of unhandled exception.
+    kIgnore, // Do nothing on exception escaping job unit.
+    kLog, // Deprecated.
+};
+
 struct Job {
   enum JobKind kind;
   union {
@@ -117,10 +123,10 @@ typedef KStdOrderedSet<Job, JobCompare> DelayedJobSet;
 
 class Worker {
  public:
-  Worker(KInt id, bool errorReporting, KRef customName, WorkerKind kind)
+  Worker(KInt id, WorkerExceptionHandling exceptionHandling, KRef customName, WorkerKind kind)
       : id_(id),
         kind_(kind),
-        errorReporting_(errorReporting) {
+        exceptionHandling_(exceptionHandling) {
     name_ = customName != nullptr ? CreateStablePointer(customName) : nullptr;
     pthread_mutex_init(&lock_, nullptr);
     pthread_cond_init(&cond_, nullptr);
@@ -147,7 +153,7 @@ class Worker {
 
   KInt id() const { return id_; }
 
-  bool errorReporting() const { return errorReporting_; }
+  WorkerExceptionHandling exceptionHandling() const { return exceptionHandling_; }
 
   KNativePtr name() const { return name_; }
 
@@ -173,7 +179,7 @@ class Worker {
     memoryState_ = state;
   }
 
-  friend Worker* WorkerInit(MemoryState* memoryState, KBoolean errorReporting);
+  friend Worker* WorkerInit(MemoryState* memoryState);
 
   KInt id_;
   WorkerKind kind_;
@@ -184,8 +190,7 @@ class Worker {
   // Lock and condition for waiting on the queue.
   pthread_mutex_t lock_;
   pthread_cond_t cond_;
-  // If errors to be reported on console.
-  bool errorReporting_;
+  WorkerExceptionHandling exceptionHandling_;
   bool terminated_ = false;
   pthread_t thread_ = 0;
   // MemoryState for worker's thread.
@@ -319,11 +324,11 @@ class State {
     pthread_cond_destroy(&cond_);
   }
 
-  Worker* addWorkerUnlocked(bool errorReporting, KRef customName, WorkerKind kind) {
+  Worker* addWorkerUnlocked(WorkerExceptionHandling exceptionHandling, KRef customName, WorkerKind kind) {
     Worker* worker = nullptr;
     {
       Locker locker(&lock_);
-      worker = konanConstructInstance<Worker>(nextWorkerId(), errorReporting, customName, kind);
+      worker = konanConstructInstance<Worker>(nextWorkerId(), exceptionHandling, customName, kind);
       if (worker == nullptr) return nullptr;
       workers_[worker->id()] = worker;
     }
@@ -642,8 +647,8 @@ void Future::cancelUnlocked(MemoryState* memoryState) {
 // Defined in RuntimeUtils.kt.
 extern "C" void ReportUnhandledException(KRef e);
 
-KInt startWorker(KBoolean errorReporting, KRef customName) {
-  Worker* worker = theState()->addWorkerUnlocked(errorReporting != 0, customName, WorkerKind::kNative);
+KInt startWorker(WorkerExceptionHandling exceptionHandling, KRef customName) {
+  Worker* worker = theState()->addWorkerUnlocked(exceptionHandling, customName, WorkerKind::kNative);
   if (worker == nullptr) return -1;
   worker->startEventLoop();
   return worker->id();
@@ -719,7 +724,7 @@ KNativePtr detachObjectGraphInternal(KInt transferMode, KRef producer) {
 
 #else
 
-KInt startWorker(KBoolean errorReporting, KRef customName) {
+KInt startWorker(WorkerExceptionHandling exceptionHandling, KRef customName) {
   ThrowWorkerUnsupported();
 }
 
@@ -787,13 +792,13 @@ KInt GetWorkerId(Worker* worker) {
 #endif  // WITH_WORKERS
 }
 
-Worker* WorkerInit(MemoryState* memoryState, KBoolean errorReporting) {
+Worker* WorkerInit(MemoryState* memoryState) {
 #if WITH_WORKERS
   Worker* worker;
   if (::g_worker != nullptr) {
       worker = ::g_worker;
   } else {
-      worker = theState()->addWorkerUnlocked(errorReporting != 0, nullptr, WorkerKind::kOther);
+      worker = theState()->addWorkerUnlocked(WorkerExceptionHandling::kDefault, nullptr, WorkerKind::kOther);
       ::g_worker = worker;
   }
   worker->setThread(pthread_self());
@@ -1039,8 +1044,15 @@ JobKind Worker::processQueueElement(bool blocking) {
 #endif
         WorkerLaunchpad(obj, dummyHolder.slot());
       } catch (ExceptionObjHolder& e) {
-        if (errorReporting())
-          ReportUnhandledException(e.GetExceptionObject());
+        switch (exceptionHandling()) {
+            case WorkerExceptionHandling::kIgnore: break;
+            case WorkerExceptionHandling::kDefault:
+                kotlin::ProcessUnhandledException(e.GetExceptionObject());
+                break;
+            case WorkerExceptionHandling::kLog:
+                ReportUnhandledException(e.GetExceptionObject());
+                break;
+        }
       }
       DisposeStablePointer(job.executeAfter.operation);
       break;
@@ -1061,8 +1073,14 @@ JobKind Worker::processQueueElement(bool blocking) {
         result = transfer(&resultHolder, job.regularJob.transferMode);
       } catch (ExceptionObjHolder& e) {
         ok = false;
-        if (errorReporting())
-          ReportUnhandledException(e.GetExceptionObject());
+        switch (exceptionHandling()) {
+            case WorkerExceptionHandling::kIgnore:
+                break;
+            case WorkerExceptionHandling::kDefault: // TODO: Pass exception object into the future and do nothing in the default case.
+            case WorkerExceptionHandling::kLog:
+                ReportUnhandledException(e.GetExceptionObject());
+                break;
+        }
       }
       // Notify the future.
       job.regularJob.future->storeResultUnlocked(result, ok);
@@ -1079,8 +1097,12 @@ JobKind Worker::processQueueElement(bool blocking) {
 
 extern "C" {
 
-KInt Kotlin_Worker_startInternal(KBoolean noErrorReporting, KRef customName) {
-  return startWorker(noErrorReporting, customName);
+KInt Kotlin_Worker_startInternal(KBoolean errorReporting, KRef customName) {
+    return startWorker(errorReporting ? WorkerExceptionHandling::kDefault : WorkerExceptionHandling::kIgnore, customName);
+}
+
+KInt Kotlin_Worker_startInternalDeprecated(KRef customName) {
+    return startWorker(WorkerExceptionHandling::kLog, customName);
 }
 
 KInt Kotlin_Worker_currentInternal() {

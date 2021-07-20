@@ -5,6 +5,7 @@
 package kotlin.native
 
 import kotlin.native.concurrent.InvalidMutabilityException
+import kotlin.native.internal.ExportForCppRuntime
 import kotlin.native.internal.GCUnsafeCall
 import kotlin.native.internal.UnhandledExceptionHookHolder
 import kotlin.native.internal.runUnhandledExceptionHook
@@ -62,6 +63,7 @@ public fun getUnhandledExceptionHook(): ReportUnhandledExceptionHook? {
 /**
  * Perform the default processing of unhandled exception.
  */
+@ExportForCppRuntime("Kotlin_processUnhandledException")
 public fun processUnhandledException(throwable: Throwable) {
     try {
         runUnhandledExceptionHook(throwable)

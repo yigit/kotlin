@@ -203,6 +203,10 @@ void Kotlin_runUnhandledExceptionHook(KRef throwable) {
     return Kotlin_runUnhandledExceptionHookMock->Call(throwable);
 }
 
+void Kotlin_processUnhandledException(KRef exception) {
+    throw std::runtime_error("Not implemented for tests");
+}
+
 void Kotlin_WorkerBoundReference_freezeHook(KRef thiz) {
     throw std::runtime_error("Not implemented for tests");
 }
