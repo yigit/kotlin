@@ -21,6 +21,7 @@ struct SourceInfo {
     const char* fileName;
     int lineNumber;
     int column;
+    bool needFreeFileName; // TODO: check if it's safe to use std::string here instead
 };
 
 #ifdef __cplusplus

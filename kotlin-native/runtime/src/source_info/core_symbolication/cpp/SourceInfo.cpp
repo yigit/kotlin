@@ -170,6 +170,7 @@ extern "C" int Kotlin_getSourceInfo(void* addr, SourceInfo *result_buffer, int r
 
     SYM_LOG("limits: {%s %d..%d}\n", limits.fileName, limits.start, limits.end);
     inlinedTo.fileName = limits.fileName;
+    inlinedTo.needFreeFileName = false;
 
     CSSymbolForeachSourceInfo(symbol,
       ^(CSSourceInfoRef ref) {
@@ -191,6 +192,7 @@ extern "C" int Kotlin_getSourceInfo(void* addr, SourceInfo *result_buffer, int r
               inlinedFrom.fileName = fileName;
               inlinedFrom.lineNumber = lineNumber;
               inlinedFrom.column = CSSourceInfoGetColumn(ref);
+              inlinedFrom.needFreeFileName = false;
               if (strcmp(limits.fileName, fileName) == 0 && lineNumber >= limits.start && lineNumber <= limits.end) {
                   inlinedTo.lineNumber = inlinedFrom.lineNumber;
                   inlinedTo.column = inlinedFrom.column;
