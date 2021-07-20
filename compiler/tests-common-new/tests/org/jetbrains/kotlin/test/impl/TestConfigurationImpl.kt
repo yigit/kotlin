@@ -65,7 +65,7 @@ class TestConfigurationImpl(
 
     private val environmentConfigurators: List<EnvironmentConfigurator> =
         environmentConfigurators.map { it.invoke(testServices) }.also { configurators ->
-            configurators.flatMapTo(allDirectives) { it.directivesContainers }
+            configurators.flatMapTo(allDirectives) { it.directiveContainers }
             for (configurator in configurators) {
                 configurator.additionalServices.forEach { testServices.register(it) }
             }
@@ -77,7 +77,7 @@ class TestConfigurationImpl(
     override val moduleStructureExtractor: ModuleStructureExtractor = ModuleStructureExtractorImpl(
         testServices,
         additionalSourceProviders.map { it.invoke(testServices) }.also {
-            it.flatMapTo(allDirectives) { provider -> provider.directives }
+            it.flatMapTo(allDirectives) { provider -> provider.directiveContainers }
         },
         moduleStructureTransformers,
         this.environmentConfigurators
@@ -85,13 +85,13 @@ class TestConfigurationImpl(
 
     override val metaTestConfigurators: List<MetaTestConfigurator> = metaTestConfigurators.map {
         it.invoke(testServices).also { configurator ->
-            allDirectives += configurator.directives
+            allDirectives += configurator.directiveContainers
         }
     }
 
     override val afterAnalysisCheckers: List<AfterAnalysisChecker> = afterAnalysisCheckers.map {
         it.invoke(testServices).also { checker ->
-            allDirectives += checker.directives
+            allDirectives += checker.directiveContainers
         }
     }
 
@@ -138,7 +138,7 @@ class TestConfigurationImpl(
     }
 
     private fun registerDirectivesAndServices(handler: AnalysisHandler<*>) {
-        allDirectives += handler.directivesContainers
+        allDirectives += handler.directiveContainers
         testServices.register(handler.additionalServices)
     }
 
@@ -147,7 +147,7 @@ class TestConfigurationImpl(
             this@TestConfigurationImpl.facades.values.forEach {
                 it.values.forEach { facade ->
                     register(facade.additionalServices)
-                    allDirectives += facade.additionalDirectives
+                    allDirectives += facade.directiveContainers
                 }
             }
         }
