@@ -6,7 +6,6 @@
 package org.jetbrains.kotlin.gradle.incremental
 
 import com.google.gson.GsonBuilder
-import org.jetbrains.kotlin.incremental.KotlinClassInfo
 import org.jetbrains.kotlin.test.MockLibraryUtil.compileKotlin
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
@@ -43,7 +42,7 @@ abstract class ClasspathSnapshotTestCommon {
 
     object Util {
 
-        fun File.snapshot() = KotlinClassSnapshot(KotlinClassInfo.tryCreateFrom(readBytes())!!)
+        fun File.snapshot() = ClassSnapshotter.snapshot(readBytes())
 
         // Use Gson to compare objects
         private val gson by lazy { GsonBuilder().setPrettyPrinting().create() }
