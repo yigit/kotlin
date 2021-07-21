@@ -2148,6 +2148,10 @@ sealed class KtFirDiagnostic<PSI : PsiElement> : KtDiagnosticWithPsi<PSI> {
         override val diagnosticClass get() = OverrideByInline::class
     }
 
+    abstract class NonInternalPublishedApi : KtFirDiagnostic<KtElement>() {
+        override val diagnosticClass get() = NonInternalPublishedApi::class
+    }
+
     abstract class ReifiedTypeParameterInOverride : KtFirDiagnostic<KtElement>() {
         override val diagnosticClass get() = ReifiedTypeParameterInOverride::class
     }
