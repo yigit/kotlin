@@ -122,7 +122,7 @@ abstract class BasicWasmBoxTest(
             PhaseConfig(
                 wasmPhases,
                 dumpToDirectory = dumpOutputDir.path,
-                // toDumpStateAfter = allPhasesSet,
+                toDumpStateAfter = allPhasesSet,
                 // toValidateStateAfter = allPhasesSet,
                 // dumpOnlyFqName = null
             )
@@ -151,7 +151,7 @@ abstract class BasicWasmBoxTest(
             const wasmModule = new WebAssembly.Module(wasmBinary);
             const wasmInstance = new WebAssembly.Instance(wasmModule, { runtime, js_code });
 
-            const actualResult = wasmInstance.exports.$testFunction();
+            const actualResult = runtime.importStringToJs(wasmInstance.exports.$testFunction(), wasmInstance.exports.memory);
             if (actualResult !== "OK")
                 throw `Wrong box result '${'$'}{actualResult}'; Expected "OK"`;
         """.trimIndent()
