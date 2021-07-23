@@ -52,4 +52,15 @@ class Regexps {
         val names = matches.map { it.groupValues[1] }.joinToString()
         assertPrints(names, "Alice, Bob, Eve")
     }
+
+    @Sample
+    fun splitToSequence() {
+        val phoneNumber = "+7 (123) 456-78-90"
+        val regex = "[ ()-]+".toRegex()
+        val partsIterator = regex.splitToSequence(phoneNumber).iterator()
+        val countryCode = partsIterator.next()
+        val areaCode = partsIterator.next()
+        assertPrints(countryCode, "+7")
+        assertPrints(areaCode, "123")
+    }
 }
