@@ -65,6 +65,25 @@ class Regexps {
     }
 
     @Sample
+    fun splitToSequenceLongText() {
+        val markdownText = """
+            # Title
+            Summary goes here.
+            ## First section
+            Some text.
+            ## Second section
+            Some text mentioning Kotlin.
+            ## Third section
+            ...
+            """.trimIndent()
+        val regex = Regex("^#.+?$", RegexOption.MULTILINE)
+        val sectionBodyWithKotlin = regex.splitToSequence(markdownText)
+            .firstOrNull { it.contains("kotlin", ignoreCase = true) }
+            ?.trim()
+        assertPrints(sectionBodyWithKotlin, "Some text mentioning Kotlin.")
+    }
+
+    @Sample
     fun matchesAt() {
         val releaseText = "Kotlin 1.5.30 is released!"
         val versionRegex = "\\d[.]\\d[.]\\d+".toRegex()
