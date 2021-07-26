@@ -722,7 +722,7 @@ class DeclarationsConverter(
                 }
             }
         }.also {
-            it.containingClassAttr = currentDispatchReceiverType()!!.lookupTag
+            it.containingClassForStaticMemberAttr = currentDispatchReceiverType()!!.lookupTag
         }
     }
 
@@ -836,7 +836,7 @@ class DeclarationsConverter(
                 delegatedConstructor = firDelegatedCall
                 this.body = null
             }.apply {
-                containingClassAttr = currentDispatchReceiverType()!!.lookupTag
+                containingClassForStaticMemberAttr = currentDispatchReceiverType()!!.lookupTag
             }, valueParameters
         )
     }
@@ -908,7 +908,7 @@ class DeclarationsConverter(
             this.body = body
             context.firFunctionTargets.removeLast()
         }.also {
-            it.containingClassAttr = currentDispatchReceiverType()!!.lookupTag
+            it.containingClassForStaticMemberAttr = currentDispatchReceiverType()!!.lookupTag
             target.bind(it)
         }
     }

@@ -786,7 +786,7 @@ open class RawFirBuilder(
                 this@toFirConstructor?.extractValueParametersTo(this)
                 this.body = body
             }.apply {
-                containingClassAttr = currentDispatchReceiverType()!!.lookupTag
+                containingClassForStaticMemberAttr = currentDispatchReceiverType()!!.lookupTag
             }
         }
 
@@ -887,7 +887,7 @@ open class RawFirBuilder(
                     }
                 }
             }.apply {
-                containingClassAttr = currentDispatchReceiverType()!!.lookupTag
+                containingClassForStaticMemberAttr = currentDispatchReceiverType()!!.lookupTag
             }
         }
 
@@ -1327,7 +1327,7 @@ open class RawFirBuilder(
                 this.body = body
                 this@RawFirBuilder.context.firFunctionTargets.removeLast()
             }.also {
-                it.containingClassAttr = currentDispatchReceiverType()!!.lookupTag
+                it.containingClassForStaticMemberAttr = currentDispatchReceiverType()!!.lookupTag
                 bindFunctionTarget(target, it)
             }
         }
