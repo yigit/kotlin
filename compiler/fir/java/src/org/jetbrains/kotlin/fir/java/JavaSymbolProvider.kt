@@ -401,7 +401,7 @@ class JavaSymbolProvider(
                 origin = FirDeclarationOrigin.Java
                 addAnnotationsFrom(this@JavaSymbolProvider.session, javaField, javaTypeParameterStack)
             }.apply {
-                containingClassAttr = ConeClassLikeLookupTagImpl(classId)
+                containingClassForStaticMemberAttr = ConeClassLikeLookupTagImpl(classId)
             }
             else -> buildJavaField {
                 source = (javaField as? JavaElementImpl<*>)?.psi?.toFirPsiSourceElement()
@@ -431,7 +431,7 @@ class JavaSymbolProvider(
                 }
             }.apply {
                 if (javaField.isStatic) {
-                    containingClassAttr = ConeClassLikeLookupTagImpl(classId)
+                    containingClassForStaticMemberAttr = ConeClassLikeLookupTagImpl(classId)
                 }
             }
         }
@@ -490,7 +490,7 @@ class JavaSymbolProvider(
             }
         }.apply {
             if (javaMethod.isStatic) {
-                containingClassAttr = ConeClassLikeLookupTagImpl(classId)
+                containingClassForStaticMemberAttr = ConeClassLikeLookupTagImpl(classId)
             }
         }
     }
@@ -551,7 +551,7 @@ class JavaSymbolProvider(
                 annotationBuilder = { emptyList() }
             }
         }.apply {
-            containingClassAttr = ownerClassBuilder.symbol.toLookupTag()
+            containingClassForStaticMemberAttr = ownerClassBuilder.symbol.toLookupTag()
         }
     }
 
@@ -575,7 +575,7 @@ class JavaSymbolProvider(
             isPrimary = true
             annotationBuilder = { emptyList() }
         }.apply {
-            containingClassAttr = ownerClassBuilder.symbol.toLookupTag()
+            containingClassForStaticMemberAttr = ownerClassBuilder.symbol.toLookupTag()
         }
     }
 
