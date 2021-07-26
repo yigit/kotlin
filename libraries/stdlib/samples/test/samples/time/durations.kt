@@ -6,7 +6,7 @@
 package samples.time
 
 import samples.*
-import kotlin.test.assertFails
+import kotlin.test.*
 
 import kotlin.time.*
 
@@ -44,24 +44,26 @@ class Durations {
 
     @Sample
     fun parse() {
-        val isoString = "PT1H30M"
-        val defaultString = "1d 16h 15m"
-        val invalidFormat = "1 hour"
+        val isoFormatString = "PT1H30M"
+        val defaultFormatString = "1h 30m"
+        val singleUnitFormatString = "1.5h"
+        val invalidFormatString = "1 hour 30 minutes"
 
-        assertPrints(Duration.parse(isoString) == Duration.minutes(90), "true")
-        assertPrints(Duration.parse(defaultString) == Duration.hours(40) + Duration.minutes(15), "true")
-        assertFails { Duration.parse(invalidFormat) }
-        assertPrints(Duration.parseOrNull(invalidFormat), "null")
+        assertPrints(Duration.parse(isoFormatString), "1h 30m")
+        assertPrints(Duration.parse(defaultFormatString), "1h 30m")
+        assertPrints(Duration.parse(singleUnitFormatString), "1h 30m")
+        assertFails { Duration.parse(invalidFormatString) }
+        assertPrints(Duration.parseOrNull(invalidFormatString), "null")
     }
 
     @Sample
     fun parseIsoString() {
-        val isoString = "PT1H30M"
-        val defaultString = "1d 16h 15m"
+        val isoFormatString = "PT1H30M"
+        val defaultFormatString = "1h 30m"
 
-        assertPrints(Duration.parseIsoString(isoString) == Duration.minutes(90), "true")
-        assertFails { Duration.parseIsoString(defaultString) }
-        assertPrints(Duration.parseIsoStringOrNull(defaultString), "null")
+        assertPrints(Duration.parseIsoString(isoFormatString), "1h 30m")
+        assertFails { Duration.parseIsoString(defaultFormatString) }
+        assertPrints(Duration.parseIsoStringOrNull(defaultFormatString), "null")
     }
 
 }
