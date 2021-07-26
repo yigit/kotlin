@@ -1174,7 +1174,7 @@ abstract class BaseFirBuilder<T>(val baseSession: FirSession, val context: Conte
 
     protected fun FirCallableDeclaration.initContainingClassAttr() {
         val currentDispatchReceiverType = currentDispatchReceiverType() ?: return
-        containingClassAttr = currentDispatchReceiverType.lookupTag
+        containingClassForStaticMemberAttr = currentDispatchReceiverType.lookupTag
     }
 
     private fun FirVariable.toQualifiedAccess(): FirQualifiedAccessExpression = buildQualifiedAccessExpression {
