@@ -498,12 +498,13 @@ class Strings {
 
     @Sample
     fun splitToSequence() {
-        val phoneNumber = "+7 (123) 456-78-90"
-        val regex = "[ ()-]+".toRegex()
-        val partsIterator = phoneNumber.splitToSequence(regex).iterator()
-        val countryCode = partsIterator.next()
-        val areaCode = partsIterator.next()
-        assertPrints(countryCode, "+7")
-        assertPrints(areaCode, "123")
+        val colors = "green, red , brown&blue, orange, pink&green"
+        val regex = "[,\\s]+".toRegex()
+
+        val mixedColor = colors.splitToSequence(regex)
+            .onEach { println(it) }
+            .firstOrNull { it.contains('&') }
+
+        assertPrints(mixedColor, "brown&blue")
     }
 }
