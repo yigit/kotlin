@@ -123,7 +123,7 @@ class TestRunner(private val testConfiguration: TestConfiguration) {
             if (!step.shouldProcessArtifact(module, inputArtifact)) continue
 
             val result = when (step) {
-                is TestStep.FacadeStep<*, *> -> step.hackyProcessModule(module, inputArtifact, allFailedExceptions.isNotEmpty())
+                is TestStep.FacadeStep<*, *> -> step.hackyProcessModule(module, inputArtifact)
                 is TestStep.HandlersStep<*> -> step.hackyCheckArtifact(module, inputArtifact, allFailedExceptions.isNotEmpty())
             }
 
@@ -180,18 +180,16 @@ class TestRunner(private val testConfiguration: TestConfiguration) {
 
     private fun TestStep.FacadeStep<*, *>.hackyProcessModule(
         module: TestModule,
-        inputArtifact: ResultingArtifact<*>,
-        thereWereExceptionsOnPreviousSteps: Boolean
+        inputArtifact: ResultingArtifact<*>
     ): TestStep.StepResult<*> {
         @Suppress("UNCHECKED_CAST")
         return (this as TestStep.FacadeStep<ResultingArtifact.Source, *>)
-            .processModule(module, inputArtifact as ResultingArtifact<ResultingArtifact.Source>, thereWereExceptionsOnPreviousSteps)
+            .processModule(module, inputArtifact as ResultingArtifact<ResultingArtifact.Source>)
     }
 
     private fun <I : ResultingArtifact<I>> TestStep.FacadeStep<I, *>.processModule(
         module: TestModule,
-        artifact: ResultingArtifact<I>,
-        thereWereExceptionsOnPreviousSteps: Boolean
+        artifact: ResultingArtifact<I>
     ): TestStep.StepResult<*> {
         @Suppress("UNCHECKED_CAST")
         return processModule(module, artifact as I)
