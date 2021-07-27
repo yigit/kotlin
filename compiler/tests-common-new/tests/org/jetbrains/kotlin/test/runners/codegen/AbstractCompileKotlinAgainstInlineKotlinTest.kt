@@ -22,12 +22,14 @@ import org.jetbrains.kotlin.test.backend.BlackBoxCodegenSuppressor
 import org.jetbrains.kotlin.test.backend.classic.ClassicBackendInput
 import org.jetbrains.kotlin.test.backend.classic.ClassicJvmBackendFacade
 import org.jetbrains.kotlin.test.backend.handlers.AbstractIrHandler
+import org.jetbrains.kotlin.test.backend.handlers.IrInlineBodiesHandler
 import org.jetbrains.kotlin.test.backend.ir.IrBackendInput
 import org.jetbrains.kotlin.test.backend.ir.JvmIrBackendFacade
 import org.jetbrains.kotlin.test.bind
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
 import org.jetbrains.kotlin.test.builders.configureIrHandlersStep
 import org.jetbrains.kotlin.test.directives.CodegenTestDirectives.IGNORE_BACKEND_MULTI_MODULE
+import org.jetbrains.kotlin.test.directives.JvmEnvironmentConfigurationDirectives.SERIALIZE_IR
 import org.jetbrains.kotlin.test.frontend.classic.ClassicFrontend2ClassicBackendConverter
 import org.jetbrains.kotlin.test.frontend.classic.ClassicFrontend2IrConverter
 import org.jetbrains.kotlin.test.frontend.classic.ClassicFrontendFacade
@@ -84,61 +86,13 @@ open class AbstractIrSerializeCompileKotlinAgainstInlineKotlinTest : AbstractIrC
     override fun configure(builder: TestConfigurationBuilder) {
         super.configure(builder)
         builder.apply {
-            useConfigurators(::SerializeSetter)
+            defaultDirectives {
+                +SERIALIZE_IR
+            }
 
             configureIrHandlersStep {
-                useHandlers(::CheckInlineBodies)
+                useHandlers(::IrInlineBodiesHandler)
             }
         }
-    }
-
-    private class SerializeSetter(testServices: TestServices) : EnvironmentConfigurator(testServices) {
-        override fun configureCompilerConfiguration(configuration: CompilerConfiguration, module: TestModule) {
-            configuration.put(JVMConfigurationKeys.SERIALIZE_IR, true)
-        }
-    }
-
-    private class CheckInlineBodies(testServices: TestServices) : AbstractIrHandler(testServices) {
-        val declaredInlineFunctionSignatures = mutableSetOf<IdSignature>()
-
-        override fun processModule(module: TestModule, info: IrBackendInput) {
-            val irModule = info.backendInput.irModuleFragment
-            irModule.acceptChildrenVoid(InlineFunctionsCollector())
-            irModule.acceptChildrenVoid(InlineCallBodiesCheck())
-            assertions.assertTrue(info.backendInput.symbolTable.allUnbound.isEmpty())
-        }
-
-        override fun processAfterAllModules(someAssertionWasFailed: Boolean) {
-            // TODO("Not yet implemented")
-        }
-
-        inner class InlineFunctionsCollector : IrElementVisitorVoid {
-            override fun visitElement(element: IrElement) {
-                element.acceptChildrenVoid(this)
-            }
-
-            override fun visitSimpleFunction(declaration: IrSimpleFunction) {
-                if (declaration.isInline) declaration.symbol.signature?.let { declaredInlineFunctionSignatures.add(it) }
-                super.visitSimpleFunction(declaration)
-            }
-        }
-
-        inner class InlineCallBodiesCheck : IrElementVisitorVoid {
-            override fun visitElement(element: IrElement) {
-                element.acceptChildrenVoid(this)
-            }
-
-            override fun visitMemberAccess(expression: IrMemberAccessExpression<*>) {
-                val symbol = expression.symbol
-                assertions.assertTrue(symbol.isBound)
-                val callee = symbol.owner
-                if (callee.symbol.signature in declaredInlineFunctionSignatures) {
-                    val trueCallee = (callee as IrSimpleFunction).resolveFakeOverride()!!
-                    assertions.assertNotNull(trueCallee.body)
-                }
-                super.visitMemberAccess(expression)
-            }
-        }
-
     }
 }
