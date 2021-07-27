@@ -25,7 +25,7 @@ class TestConfigurationImpl(
     defaultsProvider: DefaultsProvider,
     assertions: AssertionsService,
 
-    steps: List<TestStepBuilder<*>>,
+    steps: List<TestStepBuilder<*, *>>,
 
     sourcePreprocessors: List<Constructor<SourceFilePreprocessor>>,
     additionalMetaInfoProcessors: List<Constructor<AdditionalMetaInfoProcessor>>,
@@ -110,7 +110,7 @@ class TestConfigurationImpl(
         }
     }
 
-    override val steps: List<TestStep<*>> = steps
+    override val steps: List<TestStep<*, *>> = steps
         .map { it.createTestStep(testServices) }
         .onEach { step ->
             when (step) {

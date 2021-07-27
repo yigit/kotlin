@@ -21,6 +21,7 @@ abstract class AbstractBoxInlineWithDifferentBackendsTest(
     override fun configure(builder: TestConfigurationBuilder) {
         super.configure(builder)
         builder.apply {
+            applyDumpSmapDirective()
 
             resetModuleStructureTransformers()
             useModuleStructureTransformers(

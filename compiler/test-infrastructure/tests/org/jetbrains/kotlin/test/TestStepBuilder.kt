@@ -8,22 +8,22 @@ package org.jetbrains.kotlin.test
 import org.jetbrains.kotlin.test.model.*
 import org.jetbrains.kotlin.test.services.TestServices
 
-sealed class TestStepBuilder<I : ResultingArtifact<I>> {
+sealed class TestStepBuilder<I : ResultingArtifact<I>, out O : ResultingArtifact<out O>> {
     @TestInfrastructureInternals
-    abstract fun createTestStep(testServices: TestServices): TestStep<I>
+    abstract fun createTestStep(testServices: TestServices): TestStep<I, O>
 }
 
 
 class FacadeStepBuilder<I : ResultingArtifact<I>, O : ResultingArtifact<O>>(
     val facade: Constructor<AbstractTestFacade<I, O>>
-) : TestStepBuilder<I>() {
+) : TestStepBuilder<I, O>() {
     @TestInfrastructureInternals
     override fun createTestStep(testServices: TestServices): TestStep.FacadeStep<I, O> {
         return TestStep.FacadeStep(facade.invoke(testServices))
     }
 }
 
-class HandlersStepBuilder<I : ResultingArtifact<I>>(val artifactKind: TestArtifactKind<I>) : TestStepBuilder<I>() {
+class HandlersStepBuilder<I : ResultingArtifact<I>>(val artifactKind: TestArtifactKind<I>) : TestStepBuilder<I, Nothing>() {
     private val handlers: MutableList<Constructor<AnalysisHandler<I>>> = mutableListOf()
 
     fun useHandlers(vararg constructor: Constructor<AnalysisHandler<I>>) {
@@ -35,7 +35,7 @@ class HandlersStepBuilder<I : ResultingArtifact<I>>(val artifactKind: TestArtifa
     }
 
     @TestInfrastructureInternals
-    override fun createTestStep(testServices: TestServices): TestStep<I> {
+    override fun createTestStep(testServices: TestServices): TestStep.HandlersStep<I> {
         return TestStep.HandlersStep(artifactKind, handlers.map { it.invoke(testServices) })
     }
 }

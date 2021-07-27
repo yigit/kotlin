@@ -8,27 +8,27 @@ package org.jetbrains.kotlin.test
 import org.jetbrains.kotlin.test.TestRunner.Companion.shouldRun
 import org.jetbrains.kotlin.test.model.*
 
-sealed class TestStep<I : ResultingArtifact<I>> {
+sealed class TestStep<I : ResultingArtifact<I>, out O : ResultingArtifact<out O>> {
     abstract val inputArtifactKind: TestArtifactKind<I>
 
-    protected abstract fun shouldProcessModule(module: TestModule): Boolean
-
-    fun shouldProcessArtifact(module: TestModule, inputArtifact: ResultingArtifact<*>): Boolean {
-        return inputArtifact.kind == inputArtifactKind && shouldProcessModule(module)
+    open fun shouldProcessModule(module: TestModule, inputArtifact: ResultingArtifact<*>): Boolean {
+        return inputArtifact.kind == inputArtifactKind
     }
 
-    class FacadeStep<I : ResultingArtifact<I>, O : ResultingArtifact<O>>(val facade: AbstractTestFacade<I, O>) : TestStep<I>() {
+    abstract fun processModule(module: TestModule, inputArtifact: I, thereWereExceptionsOnPreviousSteps: Boolean): StepResult<O>
+
+    class FacadeStep<I : ResultingArtifact<I>, O : ResultingArtifact<O>>(val facade: AbstractTestFacade<I, O>) : TestStep<I, O>() {
         override val inputArtifactKind: TestArtifactKind<I>
             get() = facade.inputKind
 
         val outputArtifactKind: TestArtifactKind<O>
             get() = facade.outputKind
 
-        override fun shouldProcessModule(module: TestModule): Boolean {
-            return facade.shouldRunAnalysis(module)
+        override fun shouldProcessModule(module: TestModule, inputArtifact: ResultingArtifact<*>): Boolean {
+            return super.shouldProcessModule(module, inputArtifact) && facade.shouldRunAnalysis(module)
         }
 
-        fun processModule(module: TestModule, inputArtifact: I): StepResult<O> {
+        override fun processModule(module: TestModule, inputArtifact: I, thereWereExceptionsOnPreviousSteps: Boolean): StepResult<O> {
             val outputArtifact = try {
                 facade.transform(module, inputArtifact) ?: return StepResult.NoArtifactFromFacade
             } catch (e: Throwable) {
@@ -42,21 +42,21 @@ sealed class TestStep<I : ResultingArtifact<I>> {
     class HandlersStep<I : ResultingArtifact<I>>(
         override val inputArtifactKind: TestArtifactKind<I>,
         val handlers: List<AnalysisHandler<I>>
-    ) : TestStep<I>() {
+    ) : TestStep<I, Nothing>() {
         init {
             require(handlers.all { it.artifactKind == inputArtifactKind })
         }
 
-        override fun shouldProcessModule(module: TestModule): Boolean {
-            return true
-        }
-
-        fun checkArtifact(module: TestModule, artifact: I, thereWereExceptionsOnPreviousSteps: Boolean): StepResult.HandlersResult {
+        override fun processModule(
+            module: TestModule,
+            inputArtifact: I,
+            thereWereExceptionsOnPreviousSteps: Boolean
+        ): StepResult.HandlersResult {
             val exceptions = mutableListOf<WrappedException>()
             for (outputHandler in handlers) {
                 if (outputHandler.shouldRun(thereWasAnException = thereWereExceptionsOnPreviousSteps || exceptions.isNotEmpty())) {
                     try {
-                        outputHandler.processModule(module, artifact)
+                        outputHandler.processModule(module, inputArtifact)
                     } catch (e: Throwable) {
                         // TODO
                         exceptions += WrappedException.FromFrontendHandler(e)

@@ -120,14 +120,9 @@ class TestRunner(private val testConfiguration: TestConfiguration) {
         var inputArtifact = testConfiguration.startingArtifactFactory.invoke(module)
 
         for (step in testConfiguration.steps) {
-            if (!step.shouldProcessArtifact(module, inputArtifact)) continue
+            if (!step.shouldProcessModule(module, inputArtifact)) continue
 
-            val result = when (step) {
-                is TestStep.FacadeStep<*, *> -> step.hackyProcessModule(module, inputArtifact)
-                is TestStep.HandlersStep<*> -> step.hackyCheckArtifact(module, inputArtifact, allFailedExceptions.isNotEmpty())
-            }
-
-            when (result) {
+            when (val result = step.hackyProcessModule(module, inputArtifact, allFailedExceptions.isNotEmpty())) {
                 is TestStep.StepResult.Artifact<*> -> {
                     require(step is TestStep.FacadeStep<*, *>)
                     if (step.inputArtifactKind != step.outputArtifactKind) {
@@ -178,39 +173,22 @@ class TestRunner(private val testConfiguration: TestConfiguration) {
 
     // -------------------------------------- hacks --------------------------------------
 
-    private fun TestStep.FacadeStep<*, *>.hackyProcessModule(
-        module: TestModule,
-        inputArtifact: ResultingArtifact<*>
-    ): TestStep.StepResult<*> {
-        @Suppress("UNCHECKED_CAST")
-        return (this as TestStep.FacadeStep<ResultingArtifact.Source, *>)
-            .processModule(module, inputArtifact as ResultingArtifact<ResultingArtifact.Source>)
-    }
-
-    private fun <I : ResultingArtifact<I>> TestStep.FacadeStep<I, *>.processModule(
-        module: TestModule,
-        artifact: ResultingArtifact<I>
-    ): TestStep.StepResult<*> {
-        @Suppress("UNCHECKED_CAST")
-        return processModule(module, artifact as I)
-    }
-
-    private fun TestStep.HandlersStep<*>.hackyCheckArtifact(
+    private fun TestStep<*, *>.hackyProcessModule(
         module: TestModule,
         inputArtifact: ResultingArtifact<*>,
         thereWereExceptionsOnPreviousSteps: Boolean
-    ): TestStep.StepResult.HandlersResult {
+    ): TestStep.StepResult<*> {
         @Suppress("UNCHECKED_CAST")
-        return (this as TestStep.HandlersStep<ResultingArtifact.Source>)
-            .checkArtifact(module, inputArtifact as ResultingArtifact<ResultingArtifact.Source>, thereWereExceptionsOnPreviousSteps)
+        return (this as TestStep<ResultingArtifact.Source, *>)
+            .processModule(module, inputArtifact as ResultingArtifact<ResultingArtifact.Source>, thereWereExceptionsOnPreviousSteps)
     }
 
-    private fun <I : ResultingArtifact<I>> TestStep.HandlersStep<I>.checkArtifact(
+    private fun <I : ResultingArtifact<I>> TestStep<I, *>.processModule(
         module: TestModule,
         artifact: ResultingArtifact<I>,
         thereWereExceptionsOnPreviousSteps: Boolean
-    ): TestStep.StepResult.HandlersResult {
+    ): TestStep.StepResult<*> {
         @Suppress("UNCHECKED_CAST")
-        return checkArtifact(module, artifact as I, thereWereExceptionsOnPreviousSteps)
+        return processModule(module, artifact as I, thereWereExceptionsOnPreviousSteps)
     }
 }

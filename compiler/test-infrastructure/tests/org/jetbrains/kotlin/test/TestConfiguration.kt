@@ -37,7 +37,7 @@ abstract class TestConfiguration {
 
     abstract val startingArtifactFactory: (TestModule) -> ResultingArtifact<*>
 
-    abstract val steps: List<TestStep<*>>
+    abstract val steps: List<TestStep<*, *>>
 
     abstract val metaInfoHandlerEnabled: Boolean
 }

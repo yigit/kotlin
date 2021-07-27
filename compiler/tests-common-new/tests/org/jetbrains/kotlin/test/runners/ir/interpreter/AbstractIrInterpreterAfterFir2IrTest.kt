@@ -72,6 +72,6 @@ class IrInterpreterEnvironmentConfigurator(testServices: TestServices) : Environ
         directives: RegisteredDirectives,
         languageVersion: LanguageVersion
     ): Map<AnalysisFlag<*>, Any?> {
-        return super.provideAdditionalAnalysisFlags(directives, languageVersion) + (AnalysisFlags.builtInsFromSources to true)
+        return mapOf(AnalysisFlags.builtInsFromSources to true)
     }
 }

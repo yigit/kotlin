@@ -21,10 +21,10 @@ class TestConfigurationBuilder {
     lateinit var assertions: AssertionsService
 
     @PrivateForInline
-    val steps: MutableList<TestStepBuilder<*>> = mutableListOf()
+    val steps: MutableList<TestStepBuilder<*, *>> = mutableListOf()
 
     @PrivateForInline
-    val namedSteps: MutableMap<String, TestStepBuilder<*>> = mutableMapOf()
+    val namedSteps: MutableMap<String, TestStepBuilder<*, *>> = mutableMapOf()
 
     private val sourcePreprocessors: MutableList<Constructor<SourceFilePreprocessor>> = mutableListOf()
     private val additionalMetaInfoProcessors: MutableList<Constructor<AdditionalMetaInfoProcessor>> = mutableListOf()
@@ -128,7 +128,7 @@ class TestConfigurationBuilder {
         init: HandlersStepBuilder<I>.() -> Unit
     ) {
         val step = namedSteps[name] ?: error { "Step \"$name\" not found" }
-        require(step is HandlersStepBuilder<*>) { "Step '$name' is not a handlers step"}
+        require(step is HandlersStepBuilder<*>) { "Step '$name' is not a handlers step" }
         require(step.artifactKind == artifactKind) { "Step kind: ${step.artifactKind}, passed kind is $artifactKind" }
         @Suppress("UNCHECKED_CAST")
         (step as HandlersStepBuilder<I>).apply(init)
