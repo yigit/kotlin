@@ -156,6 +156,9 @@ class JavaSymbolProvider(
 
     fun getFirJavaClass(classId: ClassId, content: KotlinClassFinder.Result.ClassFileContent? = null): FirRegularClassSymbol? {
         if (!hasTopLevelClassOf(classId)) return null
+
+        classId.outerClassId?.let { classCache.getValue(it, content) }
+
         return classCache.getValue(classId, content)
     }
 
