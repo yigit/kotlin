@@ -23,7 +23,7 @@ dependencies {
     testApi(commonDep("junit:junit"))
     testApi(protobufFull())
     testApi(kotlinStdlib())
-    testImplementation(project(":kotlin-reflect"))
+    testRuntimeOnly(project(":kotlin-reflect"))
 }
 
 sourceSets {
