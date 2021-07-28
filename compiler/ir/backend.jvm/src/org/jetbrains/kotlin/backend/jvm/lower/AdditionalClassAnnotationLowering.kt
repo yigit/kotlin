@@ -31,7 +31,8 @@ import java.lang.annotation.ElementType
 internal val additionalClassAnnotationPhase = makeIrFilePhase(
     ::AdditionalClassAnnotationLowering,
     name = "AdditionalClassAnnotation",
-    description = "Add Documented, Retention, Target, Repeatable annotations to annotation classes"
+    description = "Add Documented, Retention, Target, Repeatable annotations to annotation classes",
+    prerequisite = setOf(repeatedAnnotationPhase)
 )
 
 private class AdditionalClassAnnotationLowering(private val context: JvmBackendContext) : ClassLoweringPass {
