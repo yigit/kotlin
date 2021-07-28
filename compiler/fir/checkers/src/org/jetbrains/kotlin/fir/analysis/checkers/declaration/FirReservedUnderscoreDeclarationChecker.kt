@@ -5,16 +5,13 @@
 
 package org.jetbrains.kotlin.fir.analysis.checkers.declaration
 
-import com.intellij.psi.PsiNameIdentifierOwner
 import org.jetbrains.kotlin.fir.FirFakeSourceElementKind
-import org.jetbrains.kotlin.fir.FirLightSourceElement
-import org.jetbrains.kotlin.fir.FirPsiSourceElement
+import org.jetbrains.kotlin.fir.analysis.checkers.SourceNavigator
+import org.jetbrains.kotlin.fir.analysis.checkers.checkUnderscoreDiagnostics
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.analysis.checkers.isUnderscore
-import org.jetbrains.kotlin.fir.analysis.checkers.checkUnderscoreDiagnostics
 import org.jetbrains.kotlin.fir.analysis.diagnostics.DiagnosticReporter
 import org.jetbrains.kotlin.fir.analysis.diagnostics.FirErrors
-import org.jetbrains.kotlin.fir.analysis.diagnostics.nameIdentifier
 import org.jetbrains.kotlin.fir.analysis.diagnostics.reportOn
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
@@ -57,22 +54,16 @@ object FirReservedUnderscoreDeclarationChecker : FirBasicDeclarationChecker() {
         isSingleUnderscoreAllowed: Boolean = false
     ) {
         val declarationSource = declaration.source
-        val rawName = when (declarationSource) {
-            is FirPsiSourceElement ->
-                (declarationSource.psi as? PsiNameIdentifierOwner)?.nameIdentifier?.text
-            is FirLightSourceElement ->
-                declarationSource.treeStructure.nameIdentifier(declarationSource.lighterASTNode)?.toString()
-            else ->
-                null
-        }
-
-        if (declarationSource != null && declarationSource.kind !is FirFakeSourceElementKind && rawName != null) {
-            if (rawName.isUnderscore && !(isSingleUnderscoreAllowed && rawName == "_")) {
-                reporter.reportOn(
-                    declarationSource,
-                    FirErrors.UNDERSCORE_IS_RESERVED,
-                    context
-                )
+        if (declarationSource != null && declarationSource.kind !is FirFakeSourceElementKind) {
+            with(SourceNavigator.forElement(declaration)) {
+                val rawName = declaration.getRawName()
+                if (rawName?.isUnderscore == true && !(isSingleUnderscoreAllowed && rawName == "_")) {
+                    reporter.reportOn(
+                        declarationSource,
+                        FirErrors.UNDERSCORE_IS_RESERVED,
+                        context
+                    )
+                }
             }
         }
 

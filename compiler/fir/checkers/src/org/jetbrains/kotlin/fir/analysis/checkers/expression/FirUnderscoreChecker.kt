@@ -5,9 +5,6 @@
 
 package org.jetbrains.kotlin.fir.analysis.checkers.expression
 
-import org.jetbrains.kotlin.KtNodeTypes
-import org.jetbrains.kotlin.fir.FirLightSourceElement
-import org.jetbrains.kotlin.fir.FirPsiSourceElement
 import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.analysis.checkers.checkUnderscoreDiagnostics
 import org.jetbrains.kotlin.fir.analysis.diagnostics.DiagnosticReporter
@@ -20,7 +17,7 @@ import org.jetbrains.kotlin.fir.expressions.FirStatement
 import org.jetbrains.kotlin.fir.expressions.toResolvedCallableSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirValueParameterSymbol
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtCatchClause
+import org.jetbrains.kotlin.fir.analysis.checkers.SourceNavigator
 
 object FirUnderscoreChecker : FirBasicExpressionChecker() {
     private val singleUnderscore: Name = Name.identifier("_")
@@ -46,30 +43,14 @@ object FirUnderscoreChecker : FirBasicExpressionChecker() {
     ) {
         val calleeReference = expression.calleeReference
         val symbol = calleeReference.toResolvedCallableSymbol()
-        if (symbol !is FirValueParameterSymbol) return
-
-        var report = false
-        val source = symbol.source
-        if (source is FirPsiSourceElement) {
-            val parent = source.psi.parent?.parent
-            if (parent is KtCatchClause) {
-                report = true
+        with(SourceNavigator.forElement(expression)) {
+            if (symbol is FirValueParameterSymbol && symbol.isCatchElementParameter() && symbol.name == singleUnderscore) {
+                reporter.reportOn(
+                    calleeReference.source,
+                    FirErrors.RESOLVED_TO_UNDERSCORE_NAMED_CATCH_PARAMETER,
+                    context
+                )
             }
-        } else if (source is FirLightSourceElement) {
-            val treeStructure = source.treeStructure
-            var parent = treeStructure.getParent(source.lighterASTNode)
-            parent?.let { parent = treeStructure.getParent(it) }
-            if (parent?.tokenType == KtNodeTypes.CATCH) {
-                report = true
-            }
-        }
-
-        if (report && symbol.name == singleUnderscore) {
-            reporter.reportOn(
-                calleeReference.source,
-                FirErrors.RESOLVED_TO_UNDERSCORE_NAMED_CATCH_PARAMETER,
-                context
-            )
         }
     }
 }
