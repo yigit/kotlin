@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
 import org.jetbrains.kotlin.parsing.KotlinExpressionParsing
+import org.jetbrains.kotlin.psi.KtPsiUtil
 import org.jetbrains.kotlin.psi.stubs.elements.KtConstantExpressionElementType
 import org.jetbrains.kotlin.psi.stubs.elements.KtStringTemplateExpressionElementType
 
@@ -41,20 +42,9 @@ private val expressionSet = listOf(
 
 fun String?.nameAsSafeName(defaultName: String = ""): Name {
     return when {
-        this != null -> Name.identifier(this.unquoteIdentifier())
+        this != null -> Name.identifier(KtPsiUtil.unquoteIdentifier(this))
         defaultName.isNotEmpty() -> Name.identifier(defaultName)
         else -> SpecialNames.NO_NAME_PROVIDED
-    }
-}
-
-fun String.unquoteIdentifier(): String {
-    if (indexOf('`') < 0) {
-        return this
-    }
-    return if (startsWith("`") && endsWith("`") && length >= 2) {
-        substring(1, length - 1)
-    } else {
-        this
     }
 }
 

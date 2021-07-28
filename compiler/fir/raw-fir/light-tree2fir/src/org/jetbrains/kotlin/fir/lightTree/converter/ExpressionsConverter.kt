@@ -327,26 +327,17 @@ class ExpressionsConverter(
      * @see org.jetbrains.kotlin.fir.builder.RawFirBuilder.Visitor.visitLabeledExpression
      */
     private fun convertLabeledExpression(labeledExpression: LighterASTNode): FirElement {
-        val size = context.firLabels.size
         var firExpression: FirElement? = null
-        var errorLabel: FirLabel? = null
+        val previousLabelsSize = context.firLabels.size
+        var errorLabelSource: FirSourceElement? = null
 
         labeledExpression.forEachChildren {
             when (it.tokenType) {
                 LABEL_QUALIFIER -> {
-                    var rawName = it.toString()
-                    rawName = rawName.substring(0, rawName.length - 1)
-
-                    val firLabel = buildLabel {
-                        name = rawName.unquoteIdentifier()
-                        source = it.toFirSourceElement()
-                    }
-
-                    if (rawName.isUnderscore) {
-                        errorLabel = firLabel
-                    }
-
-                    context.firLabels += firLabel
+                    val rawName = it.toString()
+                    val pair = buildLabelAndErrorSource(rawName.substring(0, rawName.length - 1), it.toFirSourceElement())
+                    context.firLabels += pair.first
+                    errorLabelSource = pair.second
                 }
                 BLOCK -> firExpression = declarationsConverter.convertBlock(it)
                 PROPERTY -> firExpression = declarationsConverter.convertPropertyDeclaration(it)
@@ -354,25 +345,11 @@ class ExpressionsConverter(
             }
         }
 
-        if (size != context.firLabels.size) {
+        if (context.firLabels.size != previousLabelsSize) {
             context.firLabels.removeLast()
         }
 
-        val resultExpression = firExpression
-        val resultLabelSource = errorLabel?.source
-        return if (resultExpression != null) {
-            if (resultLabelSource != null) {
-                buildErrorExpression {
-                    source = resultExpression.source
-                    expression = resultExpression as? FirExpression
-                    diagnostic = ConeUnderscoreIsReserved(resultLabelSource)
-                }
-            } else {
-                resultExpression
-            }
-        } else {
-            buildErrorExpression(null, ConeSimpleDiagnostic("Empty label", DiagnosticKind.Syntax))
-        }
+        return buildExpressionWithErrorLabel(firExpression, errorLabelSource, labeledExpression.toFirSourceElement())
     }
 
     /**
