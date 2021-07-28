@@ -12,5 +12,10 @@ class FirLanguageSettingsComponent(val languageVersionSettings: LanguageVersionS
 
 private val FirSession.languageSettingsComponent: FirLanguageSettingsComponent by FirSession.sessionComponentAccessor()
 
+private val FirSession.safeLanguageSettingsComponent: FirLanguageSettingsComponent? by FirSession.nullableSessionComponentAccessor()
+
 val FirSession.languageVersionSettings: LanguageVersionSettings
     get() = languageSettingsComponent.languageVersionSettings
+
+val FirSession.safeLanguageVersionSettings: LanguageVersionSettings?
+    get() = safeLanguageSettingsComponent?.languageVersionSettings

@@ -1236,9 +1236,8 @@ abstract class BaseFirBuilder<T>(val baseSession: FirSession, val context: Conte
         return if (valueParameterDeclaration == ValueParameterDeclaration.LAMBDA && rawName == "_"
             ||
             valueParameterDeclaration == ValueParameterDeclaration.CATCH &&
-            baseSession.sessionProvider != null &&
-            baseSession.languageVersionSettings.supportsFeature(LanguageFeature.ForbidReferencingToUnderscoreNamedParameterOfCatchBlock) &&
-            safeName.asString() == "_"
+            safeName.asString() == "_" &&
+            baseSession.safeLanguageVersionSettings?.supportsFeature(LanguageFeature.ForbidReferencingToUnderscoreNamedParameterOfCatchBlock) == true
         ) {
             SpecialNames.UNDERSCORE_FOR_UNUSED_VAR
         } else {
