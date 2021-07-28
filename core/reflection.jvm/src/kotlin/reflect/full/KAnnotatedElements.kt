@@ -8,7 +8,7 @@
 package kotlin.reflect.full
 
 import java.lang.reflect.Method
-import kotlin.reflect.*
+import kotlin.reflect.KAnnotatedElement
 
 /**
  * Returns an annotation of the given type on this element.
@@ -73,10 +73,8 @@ private object Java8RepeatableContainerLoader {
     }
 
     fun loadRepeatableContainer(klass: Class<out Annotation>): Class<out Annotation>? {
-        var cache = cache
-        if (cache == null) {
-            cache = buildCache()
-            this.cache = cache
+        val cache = cache ?: synchronized(this) {
+            cache ?: buildCache().also { cache = it }
         }
 
         val repeatableClass = cache.repeatableClass ?: return null
