@@ -464,6 +464,12 @@ public class IrBytecodeListingTestGenerated extends AbstractIrBytecodeListingTes
             }
 
             @Test
+            @TestMetadata("nonRepeatedAnnotationWithItsContainer.kt")
+            public void testNonRepeatedAnnotationWithItsContainer() throws Exception {
+                runTest("compiler/testData/codegen/bytecodeListing/annotations/repeatable/nonRepeatedAnnotationWithItsContainer.kt");
+            }
+
+            @Test
             @TestMetadata("retentionAndTarget.kt")
             public void testRetentionAndTarget() throws Exception {
                 runTest("compiler/testData/codegen/bytecodeListing/annotations/repeatable/retentionAndTarget.kt");
