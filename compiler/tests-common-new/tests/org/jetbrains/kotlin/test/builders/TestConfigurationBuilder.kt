@@ -142,10 +142,6 @@ class TestConfigurationBuilder {
         }
     }
 
-    fun unregisterAllSteps() {
-        steps.clear()
-    }
-
     fun useDirectives(vararg directives: DirectivesContainer) {
         this.directives += directives
     }

@@ -6,10 +6,10 @@
 package org.jetbrains.kotlin.test.runners
 
 import org.jetbrains.kotlin.platform.jvm.JvmPlatforms
+import org.jetbrains.kotlin.test.Constructor
 import org.jetbrains.kotlin.test.TestJdkKind
 import org.jetbrains.kotlin.test.bind
 import org.jetbrains.kotlin.test.builders.TestConfigurationBuilder
-import org.jetbrains.kotlin.test.builders.firFrontendStep
 import org.jetbrains.kotlin.test.builders.firHandlersStep
 import org.jetbrains.kotlin.test.directives.FirDiagnosticsDirectives.FIR_DUMP
 import org.jetbrains.kotlin.test.directives.FirDiagnosticsDirectives.USE_LIGHT_TREE
@@ -19,8 +19,10 @@ import org.jetbrains.kotlin.test.directives.JvmEnvironmentConfigurationDirective
 import org.jetbrains.kotlin.test.directives.JvmEnvironmentConfigurationDirectives.WITH_STDLIB
 import org.jetbrains.kotlin.test.frontend.fir.FirFailingTestSuppressor
 import org.jetbrains.kotlin.test.frontend.fir.FirFrontendFacade
+import org.jetbrains.kotlin.test.frontend.fir.FirOutputArtifact
 import org.jetbrains.kotlin.test.frontend.fir.handlers.*
 import org.jetbrains.kotlin.test.model.DependencyKind
+import org.jetbrains.kotlin.test.model.FrontendFacade
 import org.jetbrains.kotlin.test.model.FrontendKinds
 import org.jetbrains.kotlin.test.services.configuration.CommonEnvironmentConfigurator
 import org.jetbrains.kotlin.test.services.sourceProviders.AdditionalDiagnosticsSourceFilesProvider
@@ -45,9 +47,11 @@ abstract class AbstractFirDiagnosticsWithLightTreeTest : AbstractFirDiagnosticTe
     }
 }
 
-
 // `baseDir` is used in Kotlin plugin from IJ infra
-fun TestConfigurationBuilder.baseFirDiagnosticTestConfiguration(baseDir: String = ".") {
+fun TestConfigurationBuilder.baseFirDiagnosticTestConfiguration(
+    baseDir: String = ".",
+    frontendFacade: Constructor<FrontendFacade<FirOutputArtifact>> = ::FirFrontendFacade
+) {
     globalDefaults {
         frontend = FrontendKinds.FIR
         targetPlatform = JvmPlatforms.defaultJvmPlatform
@@ -66,7 +70,7 @@ fun TestConfigurationBuilder.baseFirDiagnosticTestConfiguration(baseDir: String 
         ::CoroutineHelpersSourceFilesProvider.bind(baseDir),
     )
 
-    firFrontendStep()
+    facadeStep(frontendFacade)
     firHandlersStep {
         useHandlers(
             ::FirDiagnosticsHandler,
