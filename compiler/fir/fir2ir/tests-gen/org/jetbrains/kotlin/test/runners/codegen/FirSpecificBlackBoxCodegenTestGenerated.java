@@ -47,9 +47,27 @@ public class FirSpecificBlackBoxCodegenTestGenerated extends AbstractFirBlackBox
         }
 
         @Test
+        @TestMetadata("callFromCatch.kt")
+        public void testCallFromCatch() throws Exception {
+            runTest("compiler/fir/fir2ir/testData/codegen/box/unionTypes/callFromCatch.kt");
+        }
+
+        @Test
         @TestMetadata("callResolution.kt")
         public void testCallResolution() throws Exception {
             runTest("compiler/fir/fir2ir/testData/codegen/box/unionTypes/callResolution.kt");
+        }
+
+        @Test
+        @TestMetadata("interfacesApplicability.kt")
+        public void testInterfacesApplicability() throws Exception {
+            runTest("compiler/fir/fir2ir/testData/codegen/box/unionTypes/interfacesApplicability.kt");
+        }
+
+        @Test
+        @TestMetadata("localVariable.kt")
+        public void testLocalVariable() throws Exception {
+            runTest("compiler/fir/fir2ir/testData/codegen/box/unionTypes/localVariable.kt");
         }
 
         @Test
@@ -74,6 +92,18 @@ public class FirSpecificBlackBoxCodegenTestGenerated extends AbstractFirBlackBox
         @TestMetadata("typeParameter.kt")
         public void testTypeParameter() throws Exception {
             runTest("compiler/fir/fir2ir/testData/codegen/box/unionTypes/typeParameter.kt");
+        }
+
+        @Test
+        @TestMetadata("typealias.kt")
+        public void testTypealias() throws Exception {
+            runTest("compiler/fir/fir2ir/testData/codegen/box/unionTypes/typealias.kt");
+        }
+
+        @Test
+        @TestMetadata("valueParameter.kt")
+        public void testValueParameter() throws Exception {
+            runTest("compiler/fir/fir2ir/testData/codegen/box/unionTypes/valueParameter.kt");
         }
     }
 }
