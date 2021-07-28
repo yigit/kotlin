@@ -10,7 +10,8 @@ import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.*
-import org.gradle.api.tasks.incremental.IncrementalTaskInputs
+import org.gradle.work.Incremental
+import org.gradle.work.InputChanges
 import org.jetbrains.kotlin.build.report.metrics.BuildMetricsReporter
 import org.jetbrains.kotlin.build.report.metrics.BuildMetricsReporterImpl
 import org.jetbrains.kotlin.gradle.internal.kapt.incremental.ClasspathSnapshot
@@ -22,7 +23,6 @@ import org.jetbrains.kotlin.gradle.internal.tasks.TaskWithLocalState
 import org.jetbrains.kotlin.gradle.tasks.*
 import org.jetbrains.kotlin.gradle.tasks.cacheOnlyIfEnabledForKotlin
 import org.jetbrains.kotlin.gradle.tasks.clearLocalState
-import org.jetbrains.kotlin.gradle.utils.getValue
 import org.jetbrains.kotlin.gradle.utils.isConfigurationCacheAvailable
 import org.jetbrains.kotlin.gradle.utils.property
 import org.jetbrains.kotlin.gradle.utils.propertyWithNewInstance
@@ -88,8 +88,8 @@ abstract class KaptTask @Inject constructor(
     @get:Internal
     internal abstract val kaptClasspathConfigurationNames: ListProperty<String>
 
-
     @get:PathSensitive(PathSensitivity.NONE)
+    @get:Incremental
     @get:IgnoreEmptyDirectories
     @get:Optional
     @get:InputFiles
@@ -137,10 +137,11 @@ abstract class KaptTask @Inject constructor(
         message = "Don't use directly. Used only for up-to-date checks",
         level = DeprecationLevel.ERROR
     )
+    @get:Incremental
     @get:CompileClasspath
-    internal val internalAbiClasspath: FileCollection by project.provider {
-        if (includeCompileClasspath) project.files() else classpath
-    }
+    internal val internalAbiClasspath: FileCollection = project.objects.fileCollection().from(
+        { if (includeCompileClasspath) null else classpath }
+    )
 
 
     @Suppress("unused", "DeprecatedCallableAddReplaceWith")
@@ -148,10 +149,11 @@ abstract class KaptTask @Inject constructor(
         message = "Don't use directly. Used only for up-to-date checks",
         level = DeprecationLevel.ERROR
     )
+    @get:Incremental
     @get:Classpath
-    internal val internalNonAbiClasspath: FileCollection by project.provider {
-        if (includeCompileClasspath) classpath else project.files()
-    }
+    internal val internalNonAbiClasspath: FileCollection = project.objects.fileCollection().from(
+        { if (includeCompileClasspath) classpath else null }
+    )
 
     @get:Internal
     var useBuildCache: Boolean = false
@@ -165,6 +167,7 @@ abstract class KaptTask @Inject constructor(
 
     @get:InputFiles
     @get:IgnoreEmptyDirectories
+    @get:SkipWhenEmpty
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val source: ConfigurableFileCollection
 
@@ -240,25 +243,30 @@ abstract class KaptTask @Inject constructor(
     @get:Internal
     internal abstract val compiledSources: ConfigurableFileCollection
 
-    protected fun getIncrementalChanges(inputs: IncrementalTaskInputs): KaptIncrementalChanges {
+    protected fun getIncrementalChanges(inputChanges: InputChanges): KaptIncrementalChanges {
         return if (isIncremental) {
-            findClasspathChanges(inputs)
+            findClasspathChanges(inputChanges)
         } else {
             clearLocalState()
             KaptIncrementalChanges.Unknown
         }
     }
 
-    private fun findClasspathChanges(inputs: IncrementalTaskInputs): KaptIncrementalChanges {
+    private fun findClasspathChanges(inputChanges: InputChanges): KaptIncrementalChanges {
         val incAptCacheDir = incAptCache.asFile.get()
         incAptCacheDir.mkdirs()
 
         val allDataFiles = classpathStructure.files
-        val changedFiles = if (inputs.isIncremental) {
-            with(mutableSetOf<File>()) {
-                inputs.outOfDate { this.add(it.file) }
-                inputs.removed { this.add(it.file) }
-                return@with this
+        val changedFiles = if (inputChanges.isIncremental) {
+            @Suppress("DEPRECATION_ERROR")
+            listOf(
+                source,
+                internalNonAbiClasspath,
+                internalAbiClasspath,
+                classpathStructure
+            ).fold(mutableSetOf<File>()) { acc, prop ->
+                inputChanges.getFileChanges(prop).forEach { acc.add(it.file) }
+                acc
             }
         } else {
             allDataFiles
@@ -266,7 +274,7 @@ abstract class KaptTask @Inject constructor(
 
         val startTime = System.currentTimeMillis()
 
-        val previousSnapshot = if (inputs.isIncremental) {
+        val previousSnapshot = if (inputChanges.isIncremental) {
             val loadedPrevious = ClasspathSnapshot.ClasspathSnapshotFactory.loadFrom(incAptCacheDir)
 
             val previousAndCurrentDataFiles = lazy { loadedPrevious.getAllDataFiles() + allDataFiles }
