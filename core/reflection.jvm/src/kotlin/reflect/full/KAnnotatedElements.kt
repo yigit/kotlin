@@ -43,6 +43,9 @@ inline fun <reified T : Annotation> KAnnotatedElement.findAnnotations(): List<T>
 @PublishedApi
 @Suppress("UNCHECKED_CAST")
 internal fun <T : Annotation> KAnnotatedElement.findAnnotationsImpl(klass: Class<T>): List<T> {
+    val filtered = annotations.filterIsInstance(klass)
+    if (filtered.isNotEmpty()) return filtered
+
     val containerClass = Java8RepeatableContainerLoader.loadRepeatableContainer(klass)
     if (containerClass != null) {
         val container = annotations.firstOrNull { it.annotationClass.java == containerClass }
@@ -53,7 +56,7 @@ internal fun <T : Annotation> KAnnotatedElement.findAnnotationsImpl(klass: Class
         }
     }
 
-    return annotations.filterIsInstance(klass)
+    return emptyList()
 }
 
 @Suppress("UNCHECKED_CAST")
