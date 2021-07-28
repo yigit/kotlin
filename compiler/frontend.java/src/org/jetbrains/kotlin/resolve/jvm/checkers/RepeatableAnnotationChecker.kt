@@ -178,17 +178,15 @@ class RepeatableAnnotationChecker(
         // so we better obey it for full interop with the Java language and reflection.)
         for (target in containerTargets) {
             val ok = when (target) {
+                in annotationTargets -> true
                 KotlinTarget.ANNOTATION_CLASS ->
-                    KotlinTarget.ANNOTATION_CLASS in annotationTargets ||
-                            KotlinTarget.CLASS in annotationTargets ||
-                            KotlinTarget.TYPE in annotationTargets
-                KotlinTarget.CLASS ->
                     KotlinTarget.CLASS in annotationTargets ||
                             KotlinTarget.TYPE in annotationTargets
+                KotlinTarget.CLASS ->
+                    KotlinTarget.TYPE in annotationTargets
                 KotlinTarget.TYPE_PARAMETER ->
-                    KotlinTarget.TYPE_PARAMETER in annotationTargets ||
-                            KotlinTarget.TYPE in annotationTargets
-                else -> target in annotationTargets
+                    KotlinTarget.TYPE in annotationTargets
+                else -> false
             }
             if (!ok) {
                 return select(
