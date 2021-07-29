@@ -1890,6 +1890,12 @@ sealed class KtFirDiagnostic<PSI : PsiElement> : KtDiagnosticWithPsi<PSI> {
         abstract val illegalReason: String
     }
 
+    abstract class UnreachableCode : KtFirDiagnostic<KtElement>() {
+        override val diagnosticClass get() = UnreachableCode::class
+        abstract val reachable: List<PsiElement>
+        abstract val unreachable: List<PsiElement>
+    }
+
     abstract class TypeParameterIsNotAnExpression : KtFirDiagnostic<KtSimpleNameExpression>() {
         override val diagnosticClass get() = TypeParameterIsNotAnExpression::class
         abstract val typeParameter: KtTypeParameterSymbol

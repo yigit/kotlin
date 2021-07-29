@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.descriptors.EffectiveVisibility
 import org.jetbrains.kotlin.descriptors.Visibility
 import org.jetbrains.kotlin.diagnostics.WhenMissingCase
 import org.jetbrains.kotlin.fir.FirModuleData
+import org.jetbrains.kotlin.fir.FirSourceElement
 import org.jetbrains.kotlin.fir.PrivateForInline
 import org.jetbrains.kotlin.fir.checkers.generator.diagnostics.model.*
 import org.jetbrains.kotlin.fir.declarations.*
@@ -996,6 +997,11 @@ object DIAGNOSTICS_LIST : DiagnosticList("FirErrors") {
         val ELSE_MISPLACED_IN_WHEN by error<KtWhenEntry>(PositioningStrategy.ELSE_ENTRY)
         val ILLEGAL_DECLARATION_IN_WHEN_SUBJECT by error<KtElement> {
             parameter<String>("illegalReason")
+        }
+
+        val UNREACHABLE_CODE by warning<KtElement>(PositioningStrategy.UNREACHABLE_CODE) {
+            parameter<Set<FirSourceElement>>("reachable")
+            parameter<Set<FirSourceElement>>("unreachable")
         }
     }
 

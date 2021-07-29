@@ -879,6 +879,9 @@ class ControlFlowGraphBuilder {
         if (finallyEnterNode != null && finallyEnterNode.level == levelCounter + 1) {
             // TODO: in case of return/continue/break in try main block, we need a unique label.
             addEdge(node, finallyEnterNode)
+            //in case try exit is dead, but there is other edges to finally (eg return)
+            // actually finallyEnterNode can't be dead, except for the case when the whole try is dead
+            finallyEnterNode.updateDeadStatus()
         } else {
             addEdge(node, tryExitNodes.top())
         }
@@ -890,6 +893,8 @@ class ControlFlowGraphBuilder {
             val tryMainExitNode = tryMainExitNodes.top()
             // a flow where an exception of interest is thrown and caught after executing all of try-main block.
             addEdge(tryMainExitNode, it)
+            //tryMainExitNode might be dead (eg main block contains return), but it doesn't mean catch block is also dead
+            it.updateDeadStatus()
             val finallyEnterNode = finallyEnterNodes.topOrNull()
             // a flow where an uncaught exception is thrown before executing any of catch clause.
             // NB: Check the level to avoid adding an edge to the finally block at an upper level.
@@ -1340,7 +1345,7 @@ class ControlFlowGraphBuilder {
         preferredKind: EdgeKind = EdgeKind.Forward,
         isBack: Boolean = false,
         label: EdgeLabel = NormalPath,
-        isBreak: Boolean = false
+        @Suppress("UNUSED_PARAMETER") isBreak: Boolean = false
     ) {
         popAndAddEdge(node, preferredKind)
         if (targetNode != null) {
@@ -1355,7 +1360,7 @@ class ControlFlowGraphBuilder {
                 //TODO this supports single try-finally block only
                 //need to get all try-finally up to target
                 val finallyNodes = finallyBefore(targetNode)
-                if (finallyNodes != null && isBreak) {
+                if (finallyNodes != null) {
                     val (finallyEnter, finallyExit) = finallyNodes
                     addEdge(node, finallyEnter, propagateDeadness = false, label = label)
                     addEdge(finallyExit, targetNode, propagateDeadness = false, label = label)

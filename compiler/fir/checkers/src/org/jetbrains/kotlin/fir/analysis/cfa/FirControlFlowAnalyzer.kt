@@ -10,10 +10,7 @@ import org.jetbrains.kotlin.fir.analysis.checkers.context.CheckerContext
 import org.jetbrains.kotlin.fir.analysis.checkers.declaration.DeclarationCheckers
 import org.jetbrains.kotlin.fir.analysis.checkersComponent
 import org.jetbrains.kotlin.fir.analysis.diagnostics.DiagnosticReporter
-import org.jetbrains.kotlin.fir.declarations.FirClass
-import org.jetbrains.kotlin.fir.declarations.FirFunction
-import org.jetbrains.kotlin.fir.declarations.FirProperty
-import org.jetbrains.kotlin.fir.declarations.FirPropertyAccessor
+import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.resolve.dfa.cfg.ControlFlowGraph
 
 class FirControlFlowAnalyzer(

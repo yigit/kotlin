@@ -371,12 +371,12 @@ class WhenBranchConditionExitNode(owner: ControlFlowGraph, override val fir: Fir
         return visitor.visitWhenBranchConditionExitNode(this, data)
     }
 }
-class WhenBranchResultEnterNode(owner: ControlFlowGraph, override val fir: FirWhenBranch, level: Int, id: Int) : CFGNode<FirWhenBranch>(owner, level, id) {
+class WhenBranchResultEnterNode(owner: ControlFlowGraph, override val fir: FirWhenBranch, level: Int, id: Int) : CFGNode<FirWhenBranch>(owner, level, id), EnterNodeMarker {
     override fun <R, D> accept(visitor: ControlFlowGraphVisitor<R, D>, data: D): R {
         return visitor.visitWhenBranchResultEnterNode(this, data)
     }
 }
-class WhenBranchResultExitNode(owner: ControlFlowGraph, override val fir: FirWhenBranch, level: Int, id: Int) : CFGNode<FirWhenBranch>(owner, level, id) {
+class WhenBranchResultExitNode(owner: ControlFlowGraph, override val fir: FirWhenBranch, level: Int, id: Int) : CFGNode<FirWhenBranch>(owner, level, id), ExitNodeMarker {
     override fun <R, D> accept(visitor: ControlFlowGraphVisitor<R, D>, data: D): R {
         return visitor.visitWhenBranchResultExitNode(this, data)
     }
