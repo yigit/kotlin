@@ -17,6 +17,8 @@ object FirJvmErrors {
     // Declarations
     val CONFLICTING_JVM_DECLARATIONS by error0<PsiElement>()
     val OVERRIDE_CANNOT_BE_STATIC by error0<PsiElement>()
+    val JVM_STATIC_NOT_IN_OBJECT_OR_CLASS_COMPANION by error0<PsiElement>()
+    val JVM_STATIC_NOT_IN_OBJECT_OR_COMPANION by error0<PsiElement>()
     val INAPPLICABLE_JVM_NAME by error0<PsiElement>()
     val ILLEGAL_JVM_NAME by error0<PsiElement>()
 
