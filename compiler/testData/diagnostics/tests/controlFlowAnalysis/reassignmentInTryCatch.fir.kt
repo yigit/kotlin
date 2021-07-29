@@ -10,7 +10,7 @@ fun f1() {
         // KT-13612: reassignment
         <!VAL_REASSIGNMENT!>n<!> = 2
     }
-    n.hashCode()
+    <!UNINITIALIZED_VARIABLE!>n<!>.hashCode()
 }
 
 fun f2() {

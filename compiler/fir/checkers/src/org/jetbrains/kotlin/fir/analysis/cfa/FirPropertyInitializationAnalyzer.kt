@@ -107,7 +107,7 @@ object FirPropertyInitializationAnalyzer : AbstractFirPropertyInitializationChec
             node: QualifiedAccessNode
         ): Boolean {
             val kind = info[symbol] ?: EventOccurrencesRange.ZERO
-            if (!kind.isDefinitelyVisited()) {
+            if (!node.isDead && !kind.isDefinitelyVisited()) {
                 reporter.reportOn(node.fir.source, FirErrors.UNINITIALIZED_VARIABLE, symbol, context)
                 return true
             }

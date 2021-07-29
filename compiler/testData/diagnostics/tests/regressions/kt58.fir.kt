@@ -43,7 +43,7 @@ fun t3() : Int {
     finally {
         doSmth(3)
     }
-}
+<!NO_RETURN_IN_FUNCTION_WITH_BLOCK_BODY!>}<!>
 
 fun t4() : Int {
     try {

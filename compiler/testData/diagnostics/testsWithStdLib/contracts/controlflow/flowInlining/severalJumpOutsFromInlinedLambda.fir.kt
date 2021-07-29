@@ -59,8 +59,8 @@ fun exitOnlyThroughNonLocalReturns(b: Boolean?) {
         }
     }
 
-    <!UNINITIALIZED_VARIABLE!>x<!>.inc()
-    <!UNINITIALIZED_VARIABLE!>s<!>.length
+    x.inc()
+    s.length
 }
 
 fun nonLocalReturnAndOrdinaryExit(b: Boolean) {

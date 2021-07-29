@@ -89,6 +89,7 @@ class ControlFlowGraphBuilder {
     private val tryMainExitNodes: NodeStorage<FirTryExpression, TryMainBlockExitNode> = NodeStorage()
     private val catchNodeStorages: Stack<NodeStorage<FirCatch, CatchClauseEnterNode>> = stackOf()
     private val catchNodeStorage: NodeStorage<FirCatch, CatchClauseEnterNode> get() = catchNodeStorages.top()
+    private val catchExitNodeStorages: Stack<NodeStorage<FirCatch, CatchClauseExitNode>> = stackOf()
     private val finallyEnterNodes: Stack<FinallyBlockEnterNode> = stackOf()
 
     private val initBlockExitNodes: Stack<InitBlockExitNode> = stackOf()
@@ -841,6 +842,7 @@ class ControlFlowGraphBuilder {
 
     fun enterTryExpression(tryExpression: FirTryExpression): Pair<TryExpressionEnterNode, TryMainBlockEnterNode> {
         catchNodeStorages.push(NodeStorage())
+        catchExitNodeStorages.push(NodeStorage())
         val enterTryExpressionNode = createTryExpressionEnterNode(tryExpression)
         addNewSimpleNode(enterTryExpressionNode)
         val tryExitNode = createTryExpressionExitNode(tryExpression)
@@ -874,6 +876,7 @@ class ControlFlowGraphBuilder {
         levelCounter--
         val node = tryMainExitNodes.top()
         popAndAddEdge(node)
+        node.updateDeadStatus()
         val finallyEnterNode = finallyEnterNodes.topOrNull()
         // NB: Check the level to avoid adding an edge to the finally block at an upper level.
         if (finallyEnterNode != null && finallyEnterNode.level == levelCounter + 1) {
@@ -920,6 +923,7 @@ class ControlFlowGraphBuilder {
             } else {
                 addEdge(it, tryExitNodes.top(), propagateDeadness = false)
             }
+            catchExitNodeStorages.top().push(it)
         }
     }
 
@@ -933,8 +937,17 @@ class ControlFlowGraphBuilder {
         return createFinallyBlockExitNode(tryExpression).also {
             popAndAddEdge(it)
             val tryExitNode = tryExitNodes.top()
+            val tryMainExitNode = tryMainExitNodes.top()
             // a flow where either there wasn't any exception or caught if any.
-            addEdge(it, tryExitNode)
+            //if all exits from try are dead, then edge from finally to tryExitNode should be also dead
+            val catchExitNodes = catchExitNodeStorages.top()
+            val allCatchesAreDead = tryExpression.catches.all { catch -> catchExitNodes[catch]!!.isDead }
+            val finallyIsDeadEnd = tryMainExitNode.isDead && allCatchesAreDead
+            addEdge(
+                it,
+                tryExitNode,
+                preferredKind = if (finallyIsDeadEnd) EdgeKind.DeadForward else EdgeKind.Forward
+            )
             if (tryExitNode.isDead) {
                 //refresh forward links, which were created before finalizing try expression (eg created by `break`)
                 propagateDeadnessForward(tryExitNode)
@@ -952,6 +965,7 @@ class ControlFlowGraphBuilder {
     ): Pair<TryExpressionExitNode, UnionFunctionCallArgumentsNode?> {
         levelCounter--
         catchNodeStorages.pop()
+        catchExitNodeStorages.pop()
         tryMainExitNodes.pop()
         val node = tryExitNodes.pop()
         node.updateDeadStatus()
@@ -1363,7 +1377,9 @@ class ControlFlowGraphBuilder {
                 if (finallyNodes != null) {
                     val (finallyEnter, finallyExit) = finallyNodes
                     addEdge(node, finallyEnter, propagateDeadness = false, label = label)
-                    addEdge(finallyExit, targetNode, propagateDeadness = false, label = label)
+                    if (!finallyExit.followingNodes.contains(targetNode)) {
+                        addEdge(finallyExit, targetNode, propagateDeadness = false, label = label)
+                    }
                 } else {
                     addEdge(node, targetNode, propagateDeadness = false, label = label)
                 }
