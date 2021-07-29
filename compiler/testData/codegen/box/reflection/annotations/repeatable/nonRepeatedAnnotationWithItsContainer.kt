@@ -1,5 +1,5 @@
 // !LANGUAGE: +RepeatableAnnotations
-// !USE_EXPERIMENTAL: kotlin.ExperimentalStdlibApi
+// !API_VERSION: LATEST
 // TARGET_BACKEND: JVM_IR
 // JVM_TARGET: 1.8
 // FULL_JDK
@@ -26,15 +26,19 @@ class Z
 @A("3")
 class ZZ
 
+// JDK 9+ uses {} for array arguments instead of [], JDK 15+ doesn't render "value="
+fun Any?.render(): String =
+    toString().replace("value=", "").replace("{", "[").replace("}", "]")
+
 // Explicit container is not unwrapped.
 fun box(): String {
-    assertEquals("[@test.A(value=1), @test.As(value=[@test.A(value=2), @test.A(value=3)])]", Z::class.annotations.toString())
-    assertEquals("[@test.A(value=1)]", Z::class.findAnnotations<A>().toString())
-    assertEquals("@test.A(value=1)", Z::class.findAnnotation<A>().toString())
+    assertEquals("[@test.A(1), @test.As([@test.A(2), @test.A(3)])]", Z::class.annotations.render())
+    assertEquals("[@test.A(1)]", Z::class.findAnnotations<A>().render())
+    assertEquals("@test.A(1)", Z::class.findAnnotation<A>().render())
 
-    assertEquals("[@test.As(value=[@test.A(value=1), @test.A(value=2)]), @test.A(value=3)]", ZZ::class.annotations.toString())
-    assertEquals("[@test.A(value=3)]", ZZ::class.findAnnotations<A>().toString())
-    assertEquals("@test.A(value=3)", ZZ::class.findAnnotation<A>().toString())
+    assertEquals("[@test.As([@test.A(1), @test.A(2)]), @test.A(3)]", ZZ::class.annotations.render())
+    assertEquals("[@test.A(3)]", ZZ::class.findAnnotations<A>().render())
+    assertEquals("@test.A(3)", ZZ::class.findAnnotation<A>().render())
 
     return "OK"
 }

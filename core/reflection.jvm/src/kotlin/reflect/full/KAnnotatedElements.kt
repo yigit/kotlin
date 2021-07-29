@@ -35,8 +35,8 @@ inline fun <reified T : Annotation> KAnnotatedElement.hasAnnotation(): Boolean =
  * in Java reflection ([java.lang.reflect.AnnotatedElement.getAnnotationsByType]). This is supported both for Kotlin-repeatable
  * ([kotlin.annotation.Repeatable]) and Java-repeatable ([java.lang.annotation.Repeatable]) annotation classes.
  */
-@SinceKotlin("1.5")
-@ExperimentalStdlibApi
+@Suppress("NEWER_VERSION_IN_SINCE_KOTLIN")
+@SinceKotlin("1.6")
 inline fun <reified T : Annotation> KAnnotatedElement.findAnnotations(): List<T> =
     findAnnotationsImpl(T::class.java)
 
