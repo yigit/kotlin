@@ -822,8 +822,10 @@ public interface Errors {
     DiagnosticFactory1<PsiElement, InferenceErrorData> TYPE_INFERENCE_CANNOT_CAPTURE_TYPES = DiagnosticFactory1.create(ERROR);
     DiagnosticFactory1<PsiElement, InferenceErrorData> TYPE_INFERENCE_PARAMETER_CONSTRAINT_ERROR = DiagnosticFactory1.create(ERROR);
     DiagnosticFactory0<PsiElement> TYPE_INFERENCE_INCORPORATION_ERROR = DiagnosticFactory0.create(ERROR);
-    DiagnosticFactory1<PsiElement, TypeParameterDescriptor> TYPE_INFERENCE_ONLY_INPUT_TYPES = DiagnosticFactory1.create(ERROR);
-    DiagnosticFactory1<PsiElement, TypeParameterDescriptor> TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING = DiagnosticFactory1.create(WARNING);
+
+    DiagnosticFactoryForDeprecation1<PsiElement, TypeParameterDescriptor> TYPE_INFERENCE_ONLY_INPUT_TYPES = DiagnosticFactoryForDeprecation1.create(LanguageFeature.StrictOnlyInputTypesChecks);
+    //DiagnosticFactory1<PsiElement, TypeParameterDescriptor> TYPE_INFERENCE_ONLY_INPUT_TYPES = DiagnosticFactory1.create(ERROR);
+    //DiagnosticFactory1<PsiElement, TypeParameterDescriptor> TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING = DiagnosticFactory1.create(WARNING);
     DiagnosticFactory1<PsiElement, InferenceErrorData> TYPE_INFERENCE_UPPER_BOUND_VIOLATED = DiagnosticFactory1.create(ERROR);
     DiagnosticFactory2<KtElement, KotlinType, KotlinType> TYPE_INFERENCE_EXPECTED_TYPE_MISMATCH = DiagnosticFactory2.create(ERROR);
     DiagnosticFactory0<PsiElement> TYPE_INFERENCE_CANDIDATE_WITH_SAM_AND_VARARG = DiagnosticFactory0.create(WARNING);
@@ -1235,10 +1237,13 @@ public interface Errors {
                     try {
                         Object value = field.get(null);
                         if (value instanceof DiagnosticFactory) {
-                            DiagnosticFactory<?> factory = (DiagnosticFactory<?>)value;
-                            factory.initializeName(field.getName());
-
-                            factory.setDefaultRenderer((DiagnosticRenderer) diagnosticToRendererMap.get(factory));
+                            initializeNameAndRenderer(diagnosticToRendererMap, field.getName(), (DiagnosticFactory<?>) value);
+                        }
+                        if (value instanceof DiagnosticFactoryForDeprecation) {
+                            String errorName = field.getName();
+                            DiagnosticFactoryForDeprecation<?, ?, ?> factory = (DiagnosticFactoryForDeprecation<?, ?, ?>) value;
+                            initializeNameAndRenderer(diagnosticToRendererMap, field.getName(), factory.getErrorFactory());
+                            initializeNameAndRenderer(diagnosticToRendererMap, field.getName() + "_WARNING", factory.getWarningFactory());
                         }
                     }
                     catch (IllegalAccessException e) {
@@ -1246,7 +1251,11 @@ public interface Errors {
                     }
                 }
             }
+        }
 
+        private static void initializeNameAndRenderer(DiagnosticFactoryToRendererMap diagnosticToRendererMap, String name, DiagnosticFactory<?> factory) {
+            factory.initializeName(name);
+            factory.setDefaultRenderer((DiagnosticRenderer) diagnosticToRendererMap.get(factory));
         }
 
         private static final Initializer INSTANCE = new Initializer();
