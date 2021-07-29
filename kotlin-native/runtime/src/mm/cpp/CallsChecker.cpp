@@ -145,6 +145,10 @@ extern "C" const char* Kotlin_callsCheckerGoodFunctionNames[] = {
         "pthread_mutex_init",
         "pthread_mutex_unlock",
         "pthread_self",
+        "pthread_threadid_np",
+        "syscall",
+        "gettid",
+        "GetCurrentThreadId",
 
         "+[NSMethodSignature signatureWithObjCTypes:]",
         "+[NSNull null]",
