@@ -71,7 +71,6 @@ internal class FirDesignatedImplicitTypesTransformerForIDE(
             is FirClass, is FirConstructor, is FirTypeAlias, is FirEnumEntry, is FirAnonymousInitializer -> Unit
             is FirProperty -> {
                 check(declaration.returnTypeRef is FirResolvedTypeRef)
-                //Not resolved for some getters and setters #KT-46995
 //                check(declaration.getter?.returnTypeRef?.let { it is FirResolvedTypeRef } ?: true)
 //                check(declaration.setter?.returnTypeRef?.let { it is FirResolvedTypeRef } ?: true)
             }
