@@ -7,6 +7,7 @@ package org.jetbrains.kotlin.gradle.plugin.mpp.pm20
 
 import org.gradle.api.Project
 import org.gradle.api.provider.Provider
+import org.jetbrains.kotlin.gradle.internal.orderedCompilePluginClasspath
 import org.jetbrains.kotlin.gradle.plugin.FilesSubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
@@ -97,7 +98,7 @@ internal class CompilerPluginOptionsBuilder(
         artifacts.forEach { project.dependencies.add(configurationName, it) }
 
         return KotlinCompilerPluginData(
-            classpath = pluginClasspathConfiguration,
+            classpath = orderedCompilePluginClasspath(project, pluginClasspathConfiguration),
             options = pluginOptions,
             inputsOutputsState = KotlinCompilerPluginData.InputsOutputsState(
                 inputs = gradleInputs.flattenWithIndex(),
