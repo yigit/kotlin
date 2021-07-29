@@ -25,6 +25,7 @@ import org.jetbrains.annotations.TestOnly
 import org.jetbrains.kotlin.build.GeneratedJvmClass
 import org.jetbrains.kotlin.incremental.storage.*
 import org.jetbrains.kotlin.inline.inlineFunctionsJvmNames
+import org.jetbrains.kotlin.load.kotlin.FileBasedKotlinClass
 import org.jetbrains.kotlin.load.kotlin.header.KotlinClassHeader
 import org.jetbrains.kotlin.load.kotlin.incremental.components.IncrementalCache
 import org.jetbrains.kotlin.load.kotlin.incremental.components.JvmPackagePartProto
@@ -113,7 +114,7 @@ open class IncrementalJvmCache(
     }
 
     open fun saveFileToCache(generatedClass: GeneratedJvmClass, changesCollector: ChangesCollector) {
-        saveClassToCache(KotlinClassInfo(generatedClass.outputClass), generatedClass.sourceFiles, changesCollector)
+        saveClassToCache(KotlinClassInfo.createFrom(generatedClass.outputClass), generatedClass.sourceFiles, changesCollector)
     }
 
     /**
@@ -652,7 +653,6 @@ class KotlinClassInfo constructor(
                 )
             }
         }
-        else -> className.packageFqName
     }
 }
 
