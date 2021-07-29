@@ -42,7 +42,7 @@ private String defFileToLibName(String target, String name) {
 }
 //#endregion
 
-if (HostManager.host == "macos_arm64") {
+if (HostManager.host.name == "macos_arm64") {
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(17)
