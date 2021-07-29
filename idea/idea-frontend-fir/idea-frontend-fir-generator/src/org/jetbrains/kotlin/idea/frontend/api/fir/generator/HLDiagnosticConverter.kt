@@ -11,9 +11,11 @@ import org.jetbrains.kotlin.config.LanguageVersionSettings
 import org.jetbrains.kotlin.contracts.description.EventOccurrencesRange
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility
 import org.jetbrains.kotlin.descriptors.Visibility
+import org.jetbrains.kotlin.diagnostics.Severity
 import org.jetbrains.kotlin.diagnostics.WhenMissingCase
 import org.jetbrains.kotlin.fir.FirModuleData
-import org.jetbrains.kotlin.fir.checkers.generator.diagnostics.model.DiagnosticData
+import org.jetbrains.kotlin.fir.checkers.generator.diagnostics.model.DeprecationDiagnosticData
+import org.jetbrains.kotlin.fir.checkers.generator.diagnostics.model.RegularDiagnosticData
 import org.jetbrains.kotlin.fir.checkers.generator.diagnostics.model.DiagnosticList
 import org.jetbrains.kotlin.fir.checkers.generator.diagnostics.model.DiagnosticParameter
 import org.jetbrains.kotlin.fir.declarations.*
@@ -39,10 +41,26 @@ import kotlin.reflect.full.createType
 import kotlin.reflect.full.isSubclassOf
 
 object HLDiagnosticConverter {
-    fun convert(diagnosticList: DiagnosticList): HLDiagnosticList =
-        HLDiagnosticList(diagnosticList.allDiagnostics.map(::convertDiagnostic))
+    @OptIn(ExperimentalStdlibApi::class)
+    fun convert(diagnosticList: DiagnosticList): HLDiagnosticList {
+        val allDiagnostics = buildList {
+            for (diagnostic in diagnosticList.allDiagnostics) {
+                when (diagnostic) {
+                    is RegularDiagnosticData -> add(diagnostic)
+                    is DeprecationDiagnosticData -> addAll(diagnostic.expandToRegularDiagnostics())
+                }
+            }
+        }
+        return HLDiagnosticList(allDiagnostics.map(::convertDiagnostic))
+    }
 
-    private fun convertDiagnostic(diagnostic: DiagnosticData): HLDiagnostic =
+    private fun DeprecationDiagnosticData.expandToRegularDiagnostics(): List<RegularDiagnosticData> {
+        val errorDiagnostic = RegularDiagnosticData(containingObjectName, Severity.ERROR, name, psiType, parameters, positioningStrategy)
+        val warningDiagnostic = RegularDiagnosticData(containingObjectName, Severity.WARNING, "${name}_WARNING", psiType, parameters, positioningStrategy)
+        return listOf(errorDiagnostic, warningDiagnostic)
+    }
+
+    private fun convertDiagnostic(diagnostic: RegularDiagnosticData): HLDiagnostic =
         HLDiagnostic(
             original = diagnostic,
             className = diagnostic.getHLDiagnosticClassName(),
@@ -63,14 +81,14 @@ object HLDiagnosticConverter {
         )
     }
 
-    private fun DiagnosticData.getHLDiagnosticClassName() =
+    private fun RegularDiagnosticData.getHLDiagnosticClassName() =
         name.lowercase()
             .split('_')
             .joinToString(separator = "") {
                 it.replaceFirstChar(Char::uppercaseChar)
             }
 
-    private fun DiagnosticData.getHLDiagnosticImplClassName() =
+    private fun RegularDiagnosticData.getHLDiagnosticImplClassName() =
         "${getHLDiagnosticClassName()}Impl"
 
 }

@@ -1173,13 +1173,13 @@ private val exposedVisibilityDiagnosticInit: DiagnosticBuilder.() -> Unit = {
 
 private inline fun <reified P : PsiElement> AbstractDiagnosticGroup.exposedVisibilityError(
     positioningStrategy: PositioningStrategy = PositioningStrategy.DEFAULT
-): PropertyDelegateProvider<Any?, ReadOnlyProperty<AbstractDiagnosticGroup, DiagnosticData>> {
+): PropertyDelegateProvider<Any?, ReadOnlyProperty<AbstractDiagnosticGroup, RegularDiagnosticData>> {
     return error<P>(positioningStrategy, exposedVisibilityDiagnosticInit)
 }
 
 private inline fun <reified P : PsiElement> AbstractDiagnosticGroup.exposedVisibilityWarning(
     positioningStrategy: PositioningStrategy = PositioningStrategy.DEFAULT
-): PropertyDelegateProvider<Any?, ReadOnlyProperty<AbstractDiagnosticGroup, DiagnosticData>> {
+): PropertyDelegateProvider<Any?, ReadOnlyProperty<AbstractDiagnosticGroup, RegularDiagnosticData>> {
     return warning<P>(positioningStrategy, exposedVisibilityDiagnosticInit)
 }
 
