@@ -172,15 +172,14 @@ class MemberDeserializer(private val c: DeserializationContext) {
     }
 
     private fun DeserializedSimpleFunctionDescriptor.initializeWithCoroutinesExperimentalityStatus(
-            extensionReceiverParameter: ReceiverParameterDescriptor?,
-            dispatchReceiverParameter: ReceiverParameterDescriptor?,
-            typeParameters: List<TypeParameterDescriptor>,
-            unsubstitutedValueParameters: List<ValueParameterDescriptor>,
-            unsubstitutedReturnType: KotlinType?,
-            modality: Modality?,
-            visibility: DescriptorVisibility,
-            userDataMap: Map<out CallableDescriptor.UserDataKey<*>, *>,
-            isSuspend: Boolean
+        extensionReceiverParameter: ReceiverParameterDescriptor?,
+        dispatchReceiverParameter: ReceiverParameterDescriptor?,
+        typeParameters: List<TypeParameterDescriptor>,
+        unsubstitutedValueParameters: List<ValueParameterDescriptor>,
+        unsubstitutedReturnType: KotlinType?,
+        modality: Modality?,
+        visibility: DescriptorVisibility,
+        userDataMap: Map<out CallableDescriptor.UserDataKey<*>, *>
     ) {
         initialize(
             extensionReceiverParameter,
@@ -195,8 +194,7 @@ class MemberDeserializer(private val c: DeserializationContext) {
                 extensionReceiverParameter,
                 unsubstitutedValueParameters,
                 typeParameters,
-                unsubstitutedReturnType,
-                isSuspend
+                unsubstitutedReturnType
             )
         )
     }
@@ -205,8 +203,7 @@ class MemberDeserializer(private val c: DeserializationContext) {
         extensionReceiverParameter: ReceiverParameterDescriptor?,
         parameters: Collection<ValueParameterDescriptor>,
         typeParameters: Collection<TypeParameterDescriptor>,
-        returnType: KotlinType?,
-        isSuspend: Boolean
+        returnType: KotlinType?
     ): DeserializedMemberDescriptor.CoroutinesCompatibilityMode {
         if (!versionAndReleaseCoroutinesMismatch()) return CoroutinesCompatibilityMode.COMPATIBLE
         if (fqNameOrNull() == KOTLIN_SUSPEND_BUILT_IN_FUNCTION_FQ_NAME) return CoroutinesCompatibilityMode.COMPATIBLE
@@ -220,11 +217,7 @@ class MemberDeserializer(private val c: DeserializationContext) {
 
         val maxFromParameters = types.map { type ->
             when {
-                type.isSuspendFunctionType && type.arguments.size <= 3 ->
-                    if (type.arguments.any { it.type.containsSuspendFunctionType() })
-                        CoroutinesCompatibilityMode.INCOMPATIBLE
-                    else
-                        CoroutinesCompatibilityMode.NEEDS_WRAPPER
+                type.isSuspendFunctionType && type.arguments.size <= 3 -> CoroutinesCompatibilityMode.INCOMPATIBLE
 
                 type.containsSuspendFunctionType() -> CoroutinesCompatibilityMode.INCOMPATIBLE
 
@@ -233,10 +226,7 @@ class MemberDeserializer(private val c: DeserializationContext) {
         }.maxOrNull() ?: CoroutinesCompatibilityMode.COMPATIBLE
 
         return maxOf(
-            if (isSuspend)
-                CoroutinesCompatibilityMode.NEEDS_WRAPPER
-            else
-                CoroutinesCompatibilityMode.COMPATIBLE,
+            CoroutinesCompatibilityMode.COMPATIBLE,
             maxFromParameters
         )
     }
@@ -285,8 +275,7 @@ class MemberDeserializer(private val c: DeserializationContext) {
             local.typeDeserializer.type(proto.returnType(c.typeTable)),
             ProtoEnumFlags.modality(Flags.MODALITY.get(flags)),
             ProtoEnumFlags.descriptorVisibility(Flags.VISIBILITY.get(flags)),
-            emptyMap<CallableDescriptor.UserDataKey<*>, Any?>(),
-            Flags.IS_SUSPEND.get(flags)
+            emptyMap<CallableDescriptor.UserDataKey<*>, Any?>()
         )
         function.isOperator = Flags.IS_OPERATOR.get(flags)
         function.isInfix = Flags.IS_INFIX.get(flags)
@@ -359,7 +348,7 @@ class MemberDeserializer(private val c: DeserializationContext) {
                     CoroutinesCompatibilityMode.INCOMPATIBLE
                 else descriptor.computeExperimentalityModeForFunctions(
                     null, descriptor.valueParameters, descriptor.typeParameters,
-                    descriptor.returnType, isSuspend = false
+                    descriptor.returnType
                 )
 
         return descriptor

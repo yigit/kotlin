@@ -28,7 +28,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedMemberDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedMemberDescriptor.CoroutinesCompatibilityMode.COMPATIBLE
-import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedMemberDescriptor.CoroutinesCompatibilityMode.NEEDS_WRAPPER
+import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedMemberDescriptor.CoroutinesCompatibilityMode.INCOMPATIBLE
 import org.jetbrains.kotlin.storage.StorageManager
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
@@ -38,7 +38,6 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 class DeprecationResolver(
     storageManager: StorageManager,
     private val languageVersionSettings: LanguageVersionSettings,
-    private val coroutineCompatibilitySupport: CoroutineCompatibilitySupport,
     private val deprecationSettings: DeprecationSettings
 ) {
     private val deprecations = storageManager.createMemoizedFunction { descriptor: DeclarationDescriptor ->
@@ -246,11 +245,9 @@ class DeprecationResolver(
         if (target !is DeserializedMemberDescriptor) return null
 
         target.coroutinesExperimentalCompatibilityMode.let { mode ->
-            return when {
-                mode == COMPATIBLE -> null
-                mode == NEEDS_WRAPPER && coroutineCompatibilitySupport.enabled ->
-                    DeprecatedExperimentalCoroutine(target, DeprecationLevelValue.WARNING)
-                else -> DeprecatedExperimentalCoroutine(target, DeprecationLevelValue.ERROR)
+            return when (mode) {
+                COMPATIBLE -> null
+                INCOMPATIBLE -> DeprecatedExperimentalCoroutine(target, DeprecationLevelValue.ERROR)
             }
         }
     }

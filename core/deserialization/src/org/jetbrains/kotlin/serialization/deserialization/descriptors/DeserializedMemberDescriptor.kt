@@ -39,7 +39,6 @@ interface DeserializedMemberDescriptor : DeserializedDescriptor, MemberDescripto
 
     enum class CoroutinesCompatibilityMode {
         COMPATIBLE,
-        NEEDS_WRAPPER,
         INCOMPATIBLE
     }
 }

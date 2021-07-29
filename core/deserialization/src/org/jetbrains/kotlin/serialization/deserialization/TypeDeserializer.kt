@@ -6,6 +6,7 @@
 package org.jetbrains.kotlin.serialization.deserialization
 
 import org.jetbrains.kotlin.builtins.*
+import org.jetbrains.kotlin.builtins.StandardNames.CONTINUATION_INTERFACE_FQ_NAME
 import org.jetbrains.kotlin.descriptors.*
 import org.jetbrains.kotlin.descriptors.annotations.Annotations
 import org.jetbrains.kotlin.metadata.ProtoBuf
@@ -199,8 +200,8 @@ class TypeDeserializer(
 
         val continuationArgumentType = funType.getValueParameterTypesFromFunctionType().lastOrNull()?.type ?: return null
         val continuationArgumentFqName = continuationArgumentType.constructor.declarationDescriptor?.fqNameSafe
-        if (continuationArgumentType.arguments.size != 1 || !(isContinuation(continuationArgumentFqName, true) ||
-                    isContinuation(continuationArgumentFqName, false))
+        if (continuationArgumentType.arguments.size != 1 || !(continuationArgumentFqName == CONTINUATION_INTERFACE_FQ_NAME ||
+                    continuationArgumentFqName == CONTINUATION_INTERFACE_FQ_NAME)
         ) {
             return funType as SimpleType?
         }
@@ -214,7 +215,7 @@ class TypeDeserializer(
 
         // Load experimental suspend function type as suspend function type
         experimentalSuspendFunctionTypeEncountered = experimentalSuspendFunctionTypeEncountered ||
-                (isReleaseCoroutines && isContinuation(continuationArgumentFqName, !isReleaseCoroutines))
+                (isReleaseCoroutines && continuationArgumentFqName == CONTINUATION_INTERFACE_FQ_NAME)
 
         return createSimpleSuspendFunctionType(funType, suspendReturnType)
     }
